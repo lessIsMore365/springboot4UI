@@ -11,6 +11,9 @@ import RoleList from './components/roles/RoleList';
 import PermissionList from './components/permissions/PermissionList';
 import RedisOperations from './components/redis/RedisOperations';
 import Demo from './components/demo/Demo';
+import PaymentManagement from './components/payment/PaymentManagement';
+import ReconciliationManagement from './components/reconciliation/ReconciliationManagement';
+import Java21Demo from './components/java21/Java21Demo';
 
 import './App.css';
 
@@ -120,6 +123,21 @@ const Navbar = ({ isAuthenticated, currentUser, onLogout, isAuthPage }) => {
               <li className="navbar-item">
                 <Link to="/redis" className={`navbar-link ${isActive('/redis') ? 'active' : ''}`}>
                   🗃️ Redis
+                </Link>
+              </li>
+              <li className="navbar-item">
+                <Link to="/payment" className={`navbar-link ${isActive('/payment') ? 'active' : ''}`}>
+                  💰 支付
+                </Link>
+              </li>
+              <li className="navbar-item">
+                <Link to="/reconciliation" className={`navbar-link ${isActive('/reconciliation') ? 'active' : ''}`}>
+                  📊 对帐
+                </Link>
+              </li>
+              <li className="navbar-item">
+                <Link to="/java21" className={`navbar-link ${isActive('/java21') ? 'active' : ''}`}>
+                  ☕ Java 21
                 </Link>
               </li>
             </>
@@ -289,6 +307,17 @@ const AppContent = () => {
               <RedisOperations />
             </PrivateRoute>
           } />
+          <Route path="/payment" element={
+            <PrivateRoute isAuthenticated={isAuthenticated}>
+              <PaymentManagement />
+            </PrivateRoute>
+          } />
+          <Route path="/reconciliation" element={
+            <PrivateRoute isAuthenticated={isAuthenticated}>
+              <ReconciliationManagement />
+            </PrivateRoute>
+          } />
+          <Route path="/java21" element={<Java21Demo />} />
 
           {/* 默认重定向 */}
           <Route path="*" element={<Navigate to="/" />} />

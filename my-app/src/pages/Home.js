@@ -88,6 +88,42 @@ const Home = () => {
               查看演示 →
             </Link>
           </div>
+
+          <div className="feature-card">
+            <div className="feature-icon">💰</div>
+            <h3>支付管理</h3>
+            <p>
+              支持支付宝和微信支付，包含订单创建、
+              查询、关闭、退款等完整支付流程。
+            </p>
+            <Link to="/payment" className="feature-link">
+              管理支付 →
+            </Link>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-icon">📊</div>
+            <h3>对帐管理</h3>
+            <p>
+              自动/手动对帐，逐笔比对订单号、金额、
+              状态，识别差异，支持历史查询和统计分析。
+            </p>
+            <Link to="/reconciliation" className="feature-link">
+              查看对帐 →
+            </Link>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-icon">☕</div>
+            <h3>Java 21 新特性</h3>
+            <p>
+              虚拟线程、结构化并发、作用域值、模式匹配、
+              Record 全生态化 — 五大新特性交互式演示。
+            </p>
+            <Link to="/java21" className="feature-link">
+              探索特性 →
+            </Link>
+          </div>
         </div>
 
         <div className="home-info">
@@ -117,8 +153,8 @@ const Home = () => {
           <div className="info-card">
             <h3>API 文档</h3>
             <p>
-              完整的 API 接口文档已生成，包含认证、用户、角色、
-              权限、Redis 等所有端点的详细说明。
+              完整的 API 接口文档，包含认证、用户、角色、
+              权限、Redis、支付、对帐等所有端点的详细说明。
             </p>
             <p className="info-note">
               后端服务运行在 <code>http://localhost:8080</code>

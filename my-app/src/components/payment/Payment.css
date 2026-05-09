@@ -1,0 +1,172 @@
+.payment-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.payment-header h2 {
+  margin: 0;
+  color: #1a202c;
+}
+
+.payment-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.payment-table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.payment-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payment-table th,
+.payment-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.payment-table th {
+  background: #f7fafc;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.payment-table td {
+  font-size: 14px;
+  color: #2d3748;
+}
+
+.payment-table tbody tr:hover {
+  background: #f7fafc;
+}
+
+/* Refund Section */
+.refund-section {
+  margin-top: 24px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.refund-section h3 {
+  margin: 0 0 16px 0;
+  color: #1a202c;
+}
+
+.refund-form .form-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.refund-form .form-group {
+  flex: 1;
+  min-width: 150px;
+}
+
+.refund-form .form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.refund-form .form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.refund-form .form-group-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+}
+
+.refund-result {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.refund-result.success {
+  background: #f0fff4;
+  color: #22543d;
+  border: 1px solid #c6f6d5;
+}
+
+.refund-result.error {
+  background: #fff5f5;
+  color: #742a2a;
+  border: 1px solid #fed7d7;
+}
+
+/* Pay Result */
+.pay-result {
+  margin: 16px 0;
+  padding: 16px;
+  background: #f0fff4;
+  border: 1px solid #c6f6d5;
+  border-radius: 8px;
+}
+
+.pay-result-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #22543d;
+}
+
+.pay-result-info {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+}
+
+.pay-form-html {
+  margin-top: 12px;
+  padding: 10px;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+.pay-qrcode {
+  margin-top: 12px;
+  padding: 10px;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.pay-qrcode code {
+  word-break: break-all;
+  font-size: 12px;
+}
+
+/* Status colors */
+.status.success { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+.status.warning { background: #fefcbf; color: #744210; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+.status.muted   { background: #e2e8f0; color: #4a5568; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+.status.info    { background: #bee3f8; color: #2a4365; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
