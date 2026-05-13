@@ -77,6 +77,14 @@ export const roleService = {
   },
 
   /**
+   * 异步获取角色统计信息（使用虚拟线程）
+   * @returns {Promise} 统计信息
+   */
+  getRoleStatsAsync: () => {
+    return api.get('/api/roles/stats/async');
+  },
+
+  /**
    * 根据编码查询角色
    * @param {string} code - 角色编码
    * @returns {Promise} 角色信息
@@ -93,6 +101,16 @@ export const roleService = {
    */
   assignRolesToUser: (userId, roleIds) => {
     return api.post('/api/roles/assign', { userId, roleIds });
+  },
+
+  /**
+   * 异步为用户分配角色（使用虚拟线程）
+   * @param {number} userId - 用户ID
+   * @param {Array<number>} roleIds - 角色ID数组
+   * @returns {Promise} 分配结果
+   */
+  assignRolesToUserAsync: (userId, roleIds) => {
+    return api.post('/api/roles/assign/async', { userId, roleIds });
   },
 
   /**

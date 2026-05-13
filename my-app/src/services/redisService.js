@@ -46,12 +46,38 @@ export const redisService = {
   },
 
   /**
+   * 异步设置Redis键值对（使用虚拟线程）
+   * @param {string} key - 键
+   * @param {any} value - 值
+   * @param {number} [timeout] - 过期时间（秒）
+   * @param {string} [timeUnit] - 时间单位（默认SECONDS）
+   * @returns {Promise} 设置结果
+   */
+  setAsync: (key, value, timeout, timeUnit = 'SECONDS') => {
+    const data = { key, value };
+    if (timeout !== undefined) {
+      data.timeout = timeout;
+      data.timeUnit = timeUnit;
+    }
+    return api.post('/api/redis/set/async', data);
+  },
+
+  /**
    * 获取Redis键值对
    * @param {string} key - 键
    * @returns {Promise} 键值对
    */
   get: (key) => {
     return api.get(`/api/redis/get/${key}`);
+  },
+
+  /**
+   * 异步获取Redis键值对（使用虚拟线程）
+   * @param {string} key - 键
+   * @returns {Promise} 键值对
+   */
+  getAsync: (key) => {
+    return api.get(`/api/redis/get/${key}/async`);
   },
 
   /**

@@ -77,6 +77,14 @@ export const permissionService = {
   },
 
   /**
+   * 异步获取权限统计信息（使用虚拟线程）
+   * @returns {Promise} 统计信息
+   */
+  getPermissionStatsAsync: () => {
+    return api.get('/api/permissions/stats/async');
+  },
+
+  /**
    * 根据编码查询权限
    * @param {string} code - 权限编码
    * @returns {Promise} 权限信息
@@ -92,6 +100,15 @@ export const permissionService = {
    */
   getPermissionsByType: (type) => {
     return api.get(`/api/permissions/type/${type}`);
+  },
+
+  /**
+   * 根据父级ID查询子权限
+   * @param {number} parentId - 父级权限ID
+   * @returns {Promise} 子权限列表
+   */
+  getPermissionsByParent: (parentId) => {
+    return api.get(`/api/permissions/parent/${parentId}`);
   },
 
   /**

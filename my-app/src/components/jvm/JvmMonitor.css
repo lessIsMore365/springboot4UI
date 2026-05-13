@@ -1,0 +1,392 @@
+.jvm-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.jvm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.jvm-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.jvm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jvm-auto-refresh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #4a5568;
+  cursor: pointer;
+  user-select: none;
+}
+
+.jvm-auto-refresh input[type="checkbox"] {
+  accent-color: #6366f1;
+}
+
+.jvm-overview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.jvm-info-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.jvm-info-label {
+  color: #718096;
+  font-weight: 500;
+}
+
+.jvm-info-value {
+  color: #1a202c;
+  font-weight: 600;
+}
+
+.jvm-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.jvm-tab {
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  color: #718096;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  border-radius: 6px 6px 0 0;
+}
+
+.jvm-tab:hover {
+  color: #2b6cb0;
+  background: #ebf8ff;
+}
+
+.jvm-tab.active {
+  color: #2b6cb0;
+  border-bottom-color: #2b6cb0;
+}
+
+.jvm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 16px;
+}
+
+.jvm-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.jvm-card h4 {
+  margin: 0 0 14px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.jvm-bar-item {
+  margin-bottom: 12px;
+}
+
+.jvm-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #4a5568;
+  margin-bottom: 4px;
+}
+
+.jvm-bar-track {
+  height: 8px;
+  background: #edf2f7;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.jvm-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.jvm-bar-pct {
+  font-size: 12px;
+  font-weight: 600;
+  display: block;
+  text-align: right;
+  margin-top: 2px;
+}
+
+.jvm-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #718096;
+}
+
+.jvm-thread-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.jvm-thread-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f7fafc;
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 80px;
+  flex: 1;
+}
+
+.jvm-thread-stat.virtual {
+  background: #ebf8ff;
+}
+
+.jvm-thread-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.jvm-thread-label {
+  font-size: 12px;
+  color: #718096;
+  margin-top: 2px;
+}
+
+.jvm-gc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f7fafc;
+  font-size: 13px;
+}
+
+.jvm-gc-row:last-child {
+  border-bottom: none;
+}
+
+.jvm-gc-name {
+  flex: 1;
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.jvm-gc-stat {
+  color: #718096;
+  font-family: monospace;
+}
+
+.jvm-table-wrap {
+  overflow-x: auto;
+}
+
+.jvm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.jvm-table th {
+  text-align: left;
+  padding: 8px 10px;
+  background: #f7fafc;
+  color: #4a5568;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.jvm-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f7fafc;
+  color: #2d3748;
+}
+
+.jvm-thread-name {
+  font-family: monospace;
+  font-size: 12px;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jvm-state-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.jvm-state-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jvm-state-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.jvm-state-name {
+  width: 110px;
+  font-weight: 500;
+  color: #4a5568;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.jvm-state-count {
+  width: 36px;
+  text-align: right;
+  font-weight: 600;
+  color: #2d3748;
+  flex-shrink: 0;
+}
+
+.jvm-memory-section,
+.jvm-threads-section,
+.jvm-gc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jvm-threaddump-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jvm-threaddump-item {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.jvm-threaddump-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f7fafc;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 13px;
+}
+
+.jvm-threaddump-id {
+  font-weight: 600;
+  color: #2b6cb0;
+  font-family: monospace;
+}
+
+.jvm-threaddump-name {
+  flex: 1;
+  font-family: monospace;
+  font-size: 12px;
+  color: #2d3748;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jvm-threaddump-state {
+  color: #4a5568;
+  font-size: 12px;
+}
+
+.jvm-threaddump-virtual {
+  background: #ebf8ff;
+  color: #2b6cb0;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.jvm-threaddump-cpu {
+  color: #718096;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.jvm-threaddump-stack {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #4a5568;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.jvm-content .loading {
+  text-align: center;
+  padding: 40px;
+  color: #a0aec0;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .jvm-grid {
+    grid-template-columns: 1fr;
+  }
+  .jvm-thread-stats {
+    gap: 8px;
+  }
+  .jvm-thread-stat {
+    min-width: 60px;
+    padding: 8px 10px;
+  }
+  .jvm-thread-num {
+    font-size: 18px;
+  }
+}

@@ -124,6 +124,18 @@ const Home = () => {
               探索特性 →
             </Link>
           </div>
+
+          <div className="feature-card">
+            <div className="feature-icon">📈</div>
+            <h3>JVM 监控</h3>
+            <p>
+              实时堆内存、虚拟线程 vs 平台线程统计、
+              GC 详情、线程转储 — 全面监控面板。
+            </p>
+            <Link to="/jvm" className="feature-link">
+              查看监控 →
+            </Link>
+          </div>
         </div>
 
         <div className="home-info">

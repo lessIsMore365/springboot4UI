@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../services';
 import './Auth.css';
@@ -11,19 +11,25 @@ const Login = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Captcha state
+  // Click-based Chinese character captcha state
   const [captchaKey, setCaptchaKey] = useState('');
   const [captchaImage, setCaptchaImage] = useState('');
-  const [captchaCode, setCaptchaCode] = useState('');
+  const [promptText, setPromptText] = useState('');
+  const [charCount, setCharCount] = useState(0);
   const [captchaLoading, setCaptchaLoading] = useState(false);
+  const [clickPositions, setClickPositions] = useState([]);
+  const captchaImgRef = useRef(null);
 
   const fetchCaptcha = async () => {
     setCaptchaLoading(true);
+    setClickPositions([]);
     try {
       const result = await authService.getCaptcha();
-      if (result.success) {
+      if (result.success && result.data) {
         setCaptchaKey(result.data.captchaKey);
         setCaptchaImage(result.data.captchaImage);
+        setPromptText(result.data.promptText || '');
+        setCharCount(result.data.charCount || 0);
       }
     } catch (err) {
       console.error('获取验证码失败:', err);
@@ -36,12 +42,28 @@ const Login = ({ onLoginSuccess }) => {
     fetchCaptcha();
   }, []);
 
+  const handleCaptchaClick = useCallback((e) => {
+    if (loading || clickPositions.length >= charCount) return;
+    const img = captchaImgRef.current;
+    if (!img) return;
+    const rect = img.getBoundingClientRect();
+    const scaleX = img.naturalWidth / rect.width;
+    const scaleY = img.naturalHeight / rect.height;
+    const x = Math.round((e.clientX - rect.left) * scaleX);
+    const y = Math.round((e.clientY - rect.top) * scaleY);
+    setClickPositions(prev => [...prev, { x, y }]);
+  }, [loading, clickPositions.length, charCount]);
+
+  const clearClicks = () => setClickPositions([]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      const captchaCode = authService.parseCaptchaText(promptText);
+
       const result = await authService.login(username, password, captchaKey, captchaCode);
 
       if (result.success) {
@@ -55,11 +77,12 @@ const Login = ({ onLoginSuccess }) => {
     } catch (err) {
       setError(err.message || '登录失败，请检查用户名和密码');
       fetchCaptcha();
-      setCaptchaCode('');
     } finally {
       setLoading(false);
     }
   };
+
+  const clicksRemaining = charCount - clickPositions.length;
 
   return (
     <div className="auth-page">
@@ -104,44 +127,63 @@ const Login = ({ onLoginSuccess }) => {
             />
           </div>
 
-          {/* Captcha */}
+          {/* Click-based Chinese character captcha */}
           <div className="captcha-group">
-            <div className="captcha-row">
-              {captchaLoading ? (
-                <div className="captcha-placeholder">加载验证码...</div>
-              ) : captchaImage ? (
-                <img
-                  src={captchaImage}
-                  alt="验证码"
-                  className="captcha-image"
-                  onClick={fetchCaptcha}
-                  title="点击刷新验证码"
-                />
-              ) : (
-                <div className="captcha-placeholder">验证码加载失败</div>
-              )}
-              <button
-                type="button"
-                className="captcha-refresh"
-                onClick={fetchCaptcha}
-                disabled={captchaLoading}
-                title="刷新验证码"
-              >
-                🔄
-              </button>
-            </div>
-            <div className="input-group no-icon">
-              <input
-                type="text"
-                placeholder="请输入验证码"
-                value={captchaCode}
-                onChange={(e) => setCaptchaCode(e.target.value.toUpperCase())}
-                required
-                disabled={loading}
-                maxLength={4}
-                className="captcha-input"
-              />
-            </div>
+            {captchaLoading ? (
+              <div className="captcha-placeholder">加载验证码...</div>
+            ) : captchaImage ? (
+              <div className="captcha-click-area">
+                {promptText && (
+                  <div className="captcha-prompt">{promptText}</div>
+                )}
+                <div className="captcha-image-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    ref={captchaImgRef}
+                    src={captchaImage}
+                    alt="验证码"
+                    className="captcha-image captcha-clickable"
+                    onClick={handleCaptchaClick}
+                    title={clicksRemaining > 0 ? `请点击 ${clicksRemaining} 个汉字` : '已选择全部汉字'}
+                    style={{ cursor: clicksRemaining > 0 && !loading ? 'crosshair' : 'default', width: 350, height: 180 }}
+                  />
+                  {clickPositions.map((pos, idx) => (
+                    <span
+                      key={idx}
+                      className="captcha-click-marker"
+                      style={{
+                        left: `${(pos.x / 350) * 100}%`,
+                        top: `${(pos.y / 180) * 100}%`,
+                      }}
+                    >
+                      {idx + 1}
+                    </span>
+                  ))}
+                </div>
+                <div className="captcha-actions">
+                  <span className="captcha-click-hint">
+                    {clicksRemaining > 0
+                      ? `请在图片中依次点击 ${clicksRemaining} 个汉字`
+                      : '已选择全部字符'}
+                  </span>
+                  {clickPositions.length > 0 && (
+                    <button type="button" className="captcha-clear-btn" onClick={clearClicks}>
+                      重选
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="captcha-refresh"
+                    onClick={fetchCaptcha}
+                    disabled={captchaLoading}
+                    title="刷新验证码"
+                  >
+                    🔄
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="captcha-placeholder">验证码加载失败</div>
+            )}
           </div>
 
           <div className="auth-options">
@@ -161,7 +203,7 @@ const Login = ({ onLoginSuccess }) => {
           <button
             type="submit"
             className="auth-btn"
-            disabled={loading}
+            disabled={loading || clickPositions.length !== charCount}
           >
             {loading ? (
               <span className="btn-loading">

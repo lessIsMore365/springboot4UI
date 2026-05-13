@@ -14,6 +14,7 @@ import Demo from './components/demo/Demo';
 import PaymentManagement from './components/payment/PaymentManagement';
 import ReconciliationManagement from './components/reconciliation/ReconciliationManagement';
 import Java21Demo from './components/java21/Java21Demo';
+import JvmMonitor from './components/jvm/JvmMonitor';
 
 import './App.css';
 
@@ -138,6 +139,11 @@ const Navbar = ({ isAuthenticated, currentUser, onLogout, isAuthPage }) => {
               <li className="navbar-item">
                 <Link to="/java21" className={`navbar-link ${isActive('/java21') ? 'active' : ''}`}>
                   ☕ Java 21
+                </Link>
+              </li>
+              <li className="navbar-item">
+                <Link to="/jvm" className={`navbar-link ${isActive('/jvm') ? 'active' : ''}`}>
+                  📈 JVM
                 </Link>
               </li>
             </>
@@ -317,7 +323,16 @@ const AppContent = () => {
               <ReconciliationManagement />
             </PrivateRoute>
           } />
-          <Route path="/java21" element={<Java21Demo />} />
+          <Route path="/java21" element={
+            <PrivateRoute isAuthenticated={isAuthenticated}>
+              <Java21Demo />
+            </PrivateRoute>
+          } />
+          <Route path="/jvm" element={
+            <PrivateRoute isAuthenticated={isAuthenticated}>
+              <JvmMonitor />
+            </PrivateRoute>
+          } />
 
           {/* 默认重定向 */}
           <Route path="*" element={<Navigate to="/" />} />

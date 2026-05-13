@@ -444,6 +444,117 @@
   cursor: not-allowed;
 }
 
+/* ========== 点击汉字验证码样式 ========== */
+.captcha-click-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.captcha-prompt {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  background: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.captcha-image-wrapper {
+  position: relative;
+  display: inline-block;
+  align-self: center;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid #e2e8f0;
+  transition: border-color 0.2s ease;
+}
+
+.captcha-image-wrapper:hover {
+  border-color: #6366f1;
+}
+
+.captcha-clickable {
+  display: block;
+}
+
+.captcha-click-marker {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: #6366f1;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+
+.captcha-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.captcha-click-hint {
+  flex: 1;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.captcha-clear-btn {
+  padding: 4px 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  background: #fff;
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.captcha-clear-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.captcha-refresh {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.captcha-refresh:hover:not(:disabled) {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.captcha-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* 响应式 */
 @media (max-width: 480px) {
   .auth-card {
