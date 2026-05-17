@@ -37,6 +37,7 @@ const JvmMonitor = () => {
   const [overview, setOverview] = useState(null);
   const [threads, setThreads] = useState(null);
   const [threadDump, setThreadDump] = useState(null);
+  const [gcHistory, setGcHistory] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -64,6 +65,19 @@ const JvmMonitor = () => {
       else setError(result.message || '获取线程转储失败');
     } catch (err) {
       setError(err.message || '获取线程转储失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchGcHistory = async () => {
+    setLoading(true);
+    try {
+      const result = await monitorService.getGcHistory();
+      if (result.success) setGcHistory(result.data);
+      else setError(result.message || '获取GC历史失败');
+    } catch (err) {
+      setError(err.message || '获取GC历史失败');
     } finally {
       setLoading(false);
     }
@@ -134,6 +148,7 @@ const JvmMonitor = () => {
           { key: 'memory', label: '内存' },
           { key: 'threads', label: '线程' },
           { key: 'gc', label: 'GC' },
+          { key: 'gcHistory', label: 'GC 历史' },
           { key: 'threadDump', label: '线程转储' },
         ].map(tab => (
           <button
@@ -142,6 +157,7 @@ const JvmMonitor = () => {
             onClick={() => {
               setActiveTab(tab.key);
               if (tab.key === 'threadDump' && !threadDump) fetchThreadDump();
+              if (tab.key === 'gcHistory' && !gcHistory) fetchGcHistory();
             }}
           >
             {tab.label}
@@ -186,7 +202,7 @@ const JvmMonitor = () => {
             </div>
             <div className="jvm-card">
               <h4>GC</h4>
-              {overview.gc && overview.gc.map((g, i) => (
+              {overview.gc?.collectors?.map((g, i) => (
                 <div key={i} className="jvm-gc-row">
                   <span className="jvm-gc-name">{g.name}</span>
                   <span className="jvm-gc-stat">{g.collectionCount} 次</span>
@@ -333,7 +349,7 @@ const JvmMonitor = () => {
                     <tr><th>名称</th><th>收集次数</th><th>总耗时</th><th>平均耗时</th></tr>
                   </thead>
                   <tbody>
-                    {overview.gc.map((g, i) => (
+                    {overview.gc?.collectors?.map((g, i) => (
                       <tr key={i}>
                         <td>{g.name}</td>
                         <td>{g.collectionCount}</td>
@@ -345,6 +361,203 @@ const JvmMonitor = () => {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'gcHistory' && (
+          <div className="jvm-gchistory-section">
+            {loading ? (
+              <div className="loading">加载 GC 历史...</div>
+            ) : gcHistory ? (
+              <>
+                {/* GC Stats Summary */}
+                <div className="jvm-grid">
+                  <div className="jvm-card">
+                    <h4>Young GC 统计</h4>
+                    <div className="jvm-thread-stats">
+                      <div className="jvm-thread-stat">
+                        <span className="jvm-thread-num">{gcHistory.youngGcStats?.count || 0}</span>
+                        <span className="jvm-thread-label">次数</span>
+                      </div>
+                      <div className="jvm-thread-stat">
+                        <span className="jvm-thread-num">{gcHistory.youngGcStats?.totalTimeMs || 0}</span>
+                        <span className="jvm-thread-label">总耗时 (ms)</span>
+                      </div>
+                      <div className="jvm-thread-stat">
+                        <span className="jvm-thread-num">{gcHistory.youngGcStats?.avgTimeMs?.toFixed(2) || '-'}</span>
+                        <span className="jvm-thread-label">平均 (ms)</span>
+                      </div>
+                    </div>
+                    <div className="jvm-stat-row" style={{ marginTop: 12 }}>
+                      <span>p50: {gcHistory.youngGcStats?.p50PauseMs || 0}ms</span>
+                      <span>p95: {gcHistory.youngGcStats?.p95PauseMs || 0}ms</span>
+                      <span>p99: {gcHistory.youngGcStats?.p99PauseMs || 0}ms</span>
+                      <span>最大: {gcHistory.youngGcStats?.maxPauseMs || 0}ms</span>
+                    </div>
+                  </div>
+                  <div className="jvm-card">
+                    <h4>Full GC 统计</h4>
+                    <div className="jvm-thread-stats">
+                      <div className="jvm-thread-stat">
+                        <span className="jvm-thread-num">{gcHistory.fullGcStats?.count || 0}</span>
+                        <span className="jvm-thread-label">次数</span>
+                      </div>
+                      <div className="jvm-thread-stat">
+                        <span className="jvm-thread-num">{gcHistory.fullGcStats?.totalTimeMs || 0}</span>
+                        <span className="jvm-thread-label">总耗时 (ms)</span>
+                      </div>
+                      <div className="jvm-thread-stat">
+                        <span className="jvm-thread-num">{gcHistory.fullGcStats?.avgTimeMs?.toFixed(2) || '-'}</span>
+                        <span className="jvm-thread-label">平均 (ms)</span>
+                      </div>
+                    </div>
+                    {gcHistory.fullGcStats?.count > 0 ? (
+                      <div className="jvm-stat-row" style={{ marginTop: 12 }}>
+                        <span>p50: {gcHistory.fullGcStats?.p50PauseMs || 0}ms</span>
+                        <span>p95: {gcHistory.fullGcStats?.p95PauseMs || 0}ms</span>
+                        <span>p99: {gcHistory.fullGcStats?.p99PauseMs || 0}ms</span>
+                        <span>最大: {gcHistory.fullGcStats?.maxPauseMs || 0}ms</span>
+                      </div>
+                    ) : (
+                      <div className="jvm-stat-row" style={{ marginTop: 12, color: '#38a169' }}>
+                        <span>无 Full GC 事件</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pause time percentile visualization */}
+                {(gcHistory.youngGcStats?.count > 0 || gcHistory.fullGcStats?.count > 0) && (
+                  <div className="jvm-card" style={{ marginTop: 16 }}>
+                    <h4>暂停时间分布</h4>
+                    <div className="jvm-state-bars">
+                      {gcHistory.youngGcStats?.count > 0 && (
+                        <>
+                          <div className="jvm-state-bar-row">
+                            <span className="jvm-state-name">Young p50</span>
+                            <div className="jvm-bar-track">
+                              <div className="jvm-bar-fill" style={{
+                                width: `${Math.min((gcHistory.youngGcStats.p50PauseMs / Math.max(gcHistory.youngGcStats.p99PauseMs, 1)) * 100, 100)}%`,
+                                background: '#38a169',
+                              }} />
+                            </div>
+                            <span className="jvm-state-count">{gcHistory.youngGcStats.p50PauseMs}ms</span>
+                          </div>
+                          <div className="jvm-state-bar-row">
+                            <span className="jvm-state-name">Young p95</span>
+                            <div className="jvm-bar-track">
+                              <div className="jvm-bar-fill" style={{
+                                width: `${Math.min((gcHistory.youngGcStats.p95PauseMs / Math.max(gcHistory.youngGcStats.p99PauseMs, 1)) * 100, 100)}%`,
+                                background: '#dd6b20',
+                              }} />
+                            </div>
+                            <span className="jvm-state-count">{gcHistory.youngGcStats.p95PauseMs}ms</span>
+                          </div>
+                          <div className="jvm-state-bar-row">
+                            <span className="jvm-state-name">Young p99</span>
+                            <div className="jvm-bar-track">
+                              <div className="jvm-bar-fill" style={{
+                                width: `${Math.min((gcHistory.youngGcStats.p99PauseMs / Math.max(gcHistory.youngGcStats.p99PauseMs, 1)) * 100, 100)}%`,
+                                background: '#e53e3e',
+                              }} />
+                            </div>
+                            <span className="jvm-state-count">{gcHistory.youngGcStats.p99PauseMs}ms</span>
+                          </div>
+                        </>
+                      )}
+                      {gcHistory.fullGcStats?.count > 0 && (
+                        <>
+                          <div className="jvm-state-bar-row" style={{ marginTop: 8 }}>
+                            <span className="jvm-state-name">Full p50</span>
+                            <div className="jvm-bar-track">
+                              <div className="jvm-bar-fill" style={{
+                                width: `${Math.min((gcHistory.fullGcStats.p50PauseMs / Math.max(gcHistory.fullGcStats.p99PauseMs, 1)) * 100, 100)}%`,
+                                background: '#38a169',
+                              }} />
+                            </div>
+                            <span className="jvm-state-count">{gcHistory.fullGcStats.p50PauseMs}ms</span>
+                          </div>
+                          <div className="jvm-state-bar-row">
+                            <span className="jvm-state-name">Full p95</span>
+                            <div className="jvm-bar-track">
+                              <div className="jvm-bar-fill" style={{
+                                width: `${Math.min((gcHistory.fullGcStats.p95PauseMs / Math.max(gcHistory.fullGcStats.p99PauseMs, 1)) * 100, 100)}%`,
+                                background: '#dd6b20',
+                              }} />
+                            </div>
+                            <span className="jvm-state-count">{gcHistory.fullGcStats.p95PauseMs}ms</span>
+                          </div>
+                          <div className="jvm-state-bar-row">
+                            <span className="jvm-state-name">Full p99</span>
+                            <div className="jvm-bar-track">
+                              <div className="jvm-bar-fill" style={{
+                                width: `${Math.min((gcHistory.fullGcStats.p99PauseMs / Math.max(gcHistory.fullGcStats.p99PauseMs, 1)) * 100, 100)}%`,
+                                background: '#e53e3e',
+                              }} />
+                            </div>
+                            <span className="jvm-state-count">{gcHistory.fullGcStats.p99PauseMs}ms</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* GC Events Table */}
+                {gcHistory.events && gcHistory.events.length > 0 && (
+                  <div className="jvm-card" style={{ marginTop: 16 }}>
+                    <h4>GC 事件列表 <span style={{ fontWeight: 400, fontSize: 12, color: '#a0aec0' }}>（最近 {gcHistory.events.length} 条）</span></h4>
+                    <div className="jvm-table-wrap">
+                      <table className="jvm-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>收集器</th>
+                            <th>动作</th>
+                            <th>原因</th>
+                            <th>暂停</th>
+                            <th>Eden Before→After</th>
+                            <th>Old Before→After</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {gcHistory.events.map((e, i) => {
+                            const eden = e.pools?.['G1 Eden Space'];
+                            const old = e.pools?.['G1 Old Gen'];
+                            const isYoung = e.gcAction?.includes('minor');
+                            const isFull = e.gcAction?.includes('major');
+                            return (
+                              <tr key={e.id || i}>
+                                <td>{e.id}</td>
+                                <td>{e.collectorName}</td>
+                                <td>
+                                  <span className="jvm-state-dot" style={{
+                                    background: isFull ? '#e53e3e' : isYoung ? '#38a169' : '#718096',
+                                  }} />
+                                  {e.gcAction}
+                                </td>
+                                <td style={{ fontSize: 12 }}>{e.gcCause}</td>
+                                <td style={{ fontWeight: 600, color: isFull ? '#e53e3e' : '#2d3748' }}>{e.durationMs}ms</td>
+                                <td style={{ fontSize: 12 }}>
+                                  {eden ? <>{formatBytes(eden.usedBefore)} → {formatBytes(eden.usedAfter)}</> : '-'}
+                                </td>
+                                <td style={{ fontSize: 12 }}>
+                                  {old ? <>{formatBytes(old.usedBefore)} → {formatBytes(old.usedAfter)}</> : '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="jvm-card">
+                <p>点击"GC 历史"标签加载数据</p>
+              </div>
+            )}
           </div>
         )}
 

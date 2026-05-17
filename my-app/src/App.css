@@ -26,7 +26,7 @@ code {
   flex-direction: column;
 }
 
-/* 导航栏 */
+/* ========== 旧导航栏样式（保留兼容，新版使用侧边栏） ========== */
 .navbar {
   background-color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -128,7 +128,7 @@ code {
   color: white;
 }
 
-/* 主要内容区域 */
+/* 旧主要内容区域 */
 .main-content {
   flex: 1;
   padding: 20px;
@@ -137,10 +137,89 @@ code {
   width: 100%;
 }
 
-/* 认证页面布局：去除内边距和宽度限制，让登录/注册页面全屏显示 */
+/* 旧认证页面布局 */
 .main-content.auth-layout {
   padding: 0;
   max-width: none;
+}
+
+/* ========== 公开页面布局（未登录首页等） ========== */
+.public-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f1f5f9;
+}
+
+.public-topbar {
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 56px;
+}
+
+.public-topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.public-logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  text-decoration: none;
+}
+
+.public-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.public-nav-link {
+  text-decoration: none;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.public-nav-link:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.public-nav-btn {
+  text-decoration: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  transition: all 0.2s;
+}
+
+.public-nav-btn:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.public-content {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
 }
 
 /* 首页样式 */
@@ -304,18 +383,6 @@ code {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .navbar-container {
-    flex-direction: column;
-    height: auto;
-    padding: 15px 0;
-    gap: 15px;
-  }
-
-  .navbar-menu {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
   .home-header {
     padding: 30px 15px;
   }

@@ -6,6 +6,30 @@ const INITIAL_FORM = {
   code: '', name: '', type: 'API', description: '', url: '', method: 'GET'
 };
 
+const PERMISSION_TYPES = [
+  { value: 'ALL', label: '全部' },
+  { value: 'API', label: 'API' },
+  { value: 'MENU', label: '菜单' },
+  { value: 'BUTTON', label: '按钮' },
+  { value: 'DATA', label: '数据' },
+];
+
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', ''];
+
+const typeBadgeClass = (type) => 'type-badge type-' + (type || '').toLowerCase();
+
+const Modal = ({ title, children, onClose, maxWidth }) => (
+  <div className="pm-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="pm-modal" style={maxWidth ? { maxWidth } : {}}>
+      <div className="pm-modal-header">
+        <h3>{title}</h3>
+        <button className="pm-modal-close" onClick={onClose}>&times;</button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
 const PermissionList = () => {
   const [permissions, setPermissions] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, size: 10, total: 0, pages: 0 });
@@ -13,17 +37,11 @@ const PermissionList = () => {
   const [error, setError] = useState('');
   const [useAsync, setUseAsync] = useState(false);
   const [filterType, setFilterType] = useState('ALL');
+  const [stats, setStats] = useState(null);
+  const [activeTab, setActiveTab] = useState('list');
 
-  const permissionTypes = [
-    { value: 'ALL', label: '所有类型' },
-    { value: 'API', label: 'API权限' },
-    { value: 'MENU', label: '菜单权限' },
-    { value: 'BUTTON', label: '按钮权限' },
-    { value: 'DATA', label: '数据权限' }
-  ];
-
-  // Create modal state
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  // Create modal
+  const [showCreate, setShowCreate] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -34,27 +52,21 @@ const PermissionList = () => {
   const [batchLoading, setBatchLoading] = useState(false);
   const [batchResult, setBatchResult] = useState(null);
 
-  // Check URL permission
-  const [showCheckUrlModal, setShowCheckUrlModal] = useState(false);
-  const [checkUrlUserId, setCheckUrlUserId] = useState('');
-  const [checkUrlUrl, setCheckUrlUrl] = useState('');
-  const [checkUrlMethod, setCheckUrlMethod] = useState('GET');
+  // Check tools
+  const [checkUrlForm, setCheckUrlForm] = useState({ userId: '', url: '', method: 'GET' });
   const [checkUrlResult, setCheckUrlResult] = useState(null);
   const [checkUrlLoading, setCheckUrlLoading] = useState(false);
 
-  // View user permissions
-  const [showUserPermModal, setShowUserPermModal] = useState(false);
-  const [userPermUserId, setUserPermUserId] = useState('');
+  const [userPermId, setUserPermId] = useState('');
   const [userPermData, setUserPermData] = useState(null);
   const [userPermLoading, setUserPermLoading] = useState(false);
-  const [userPermError, setUserPermError] = useState('');
 
-  // View role permissions
-  const [showRolePermModal, setShowRolePermModal] = useState(false);
-  const [rolePermRoleId, setRolePermRoleId] = useState('');
+  const [rolePermId, setRolePermId] = useState('');
   const [rolePermData, setRolePermData] = useState(null);
   const [rolePermLoading, setRolePermLoading] = useState(false);
-  const [rolePermError, setRolePermError] = useState('');
+
+  const [codeSearch, setCodeSearch] = useState('');
+  const [codeSearchResult, setCodeSearchResult] = useState(null);
 
   const loadPermissions = async (page = 1) => {
     setLoading(true);
@@ -83,23 +95,27 @@ const PermissionList = () => {
       setLoading(false);
     }
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadPermissions(); }, [useAsync, filterType]);
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.pages) loadPermissions(newPage);
+  const loadStats = async () => {
+    try {
+      const result = await permissionService.getPermissionStats();
+      if (result.success) setStats(result);
+    } catch { /* silent */ }
   };
 
-  const toggleAsyncMode = () => setUseAsync(!useAsync);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadPermissions(); loadStats(); }, [useAsync, filterType]);
 
-  const handleTypeFilter = (type) => { setFilterType(type); };
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= pagination.pages) loadPermissions(page);
+  };
 
-  // Create permission
-  const openCreateModal = () => {
+  // Create
+  const openCreate = () => {
     setFormData(INITIAL_FORM);
     setFormError('');
     setFormSuccess('');
-    setShowCreateModal(true);
+    setShowCreate(true);
   };
 
   const handleFormChange = (e) => {
@@ -107,7 +123,7 @@ const PermissionList = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCreatePermission = async (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
     setFormLoading(true);
     setFormError('');
@@ -115,10 +131,11 @@ const PermissionList = () => {
     try {
       const result = await permissionService.createPermission(formData);
       if (result.success) {
-        setFormSuccess('权限创建成功！');
+        setFormSuccess('权限创建成功');
         setFormData(INITIAL_FORM);
         loadPermissions(1);
-        setTimeout(() => setShowCreateModal(false), 1000);
+        loadStats();
+        setTimeout(() => setShowCreate(false), 800);
       } else {
         setFormError(result.message || '创建失败');
       }
@@ -129,8 +146,8 @@ const PermissionList = () => {
     }
   };
 
-  // Batch create
-  const handleBatchCreate = async () => {
+  // Batch
+  const handleBatch = async () => {
     setBatchLoading(true);
     setBatchResult(null);
     try {
@@ -138,24 +155,17 @@ const PermissionList = () => {
         ? await permissionService.batchCreatePermissionsAsync(batchCount)
         : await permissionService.batchCreatePermissions(batchCount);
       setBatchResult(result);
-      if (result.success) loadPermissions(1);
+      if (result.success) { loadPermissions(1); loadStats(); }
     } catch (err) {
       setBatchResult({ success: false, message: err.message });
     } finally {
       setBatchLoading(false);
     }
   };
-  // Check URL permission
-  const openCheckUrlModal = () => {
-    setCheckUrlUserId('');
-    setCheckUrlUrl('');
-    setCheckUrlMethod('GET');
-    setCheckUrlResult(null);
-    setShowCheckUrlModal(true);
-  };
 
+  // Check URL
   const handleCheckUrl = async () => {
-    if (!checkUrlUserId.trim() || !checkUrlUrl.trim()) {
+    if (!checkUrlForm.userId.trim() || !checkUrlForm.url.trim()) {
       setCheckUrlResult({ success: false, message: '请填写用户ID和URL' });
       return;
     }
@@ -163,7 +173,7 @@ const PermissionList = () => {
     setCheckUrlResult(null);
     try {
       const result = await permissionService.checkUserPermissionForUrl(
-        parseInt(checkUrlUserId), checkUrlUrl, checkUrlMethod
+        parseInt(checkUrlForm.userId), checkUrlForm.url, checkUrlForm.method
       );
       setCheckUrlResult(result);
     } catch (err) {
@@ -173,410 +183,359 @@ const PermissionList = () => {
     }
   };
 
-  // View user permissions
-  const openUserPermModal = () => {
-    setUserPermUserId('');
-    setUserPermData(null);
-    setUserPermError('');
-    setShowUserPermModal(true);
-  };
-
-  const handleGetUserPerms = async () => {
-    if (!userPermUserId.trim()) { setUserPermError('请输入用户ID'); return; }
+  // User permissions
+  const handleUserPerms = async () => {
+    if (!userPermId.trim()) return;
     setUserPermLoading(true);
-    setUserPermError('');
     setUserPermData(null);
     try {
-      const result = await permissionService.getPermissionsByUser(parseInt(userPermUserId));
+      const result = await permissionService.getPermissionsByUser(parseInt(userPermId));
       if (result.success) setUserPermData(result.data || []);
-      else setUserPermError(result.message || '查询失败');
     } catch (err) {
-      setUserPermError(err.message || '请求失败');
+      setUserPermData([]);
     } finally {
       setUserPermLoading(false);
     }
   };
 
-  // View role permissions
-  const openRolePermModal = () => {
-    setRolePermRoleId('');
-    setRolePermData(null);
-    setRolePermError('');
-    setShowRolePermModal(true);
-  };
-
-  const handleGetRolePerms = async () => {
-    if (!rolePermRoleId.trim()) { setRolePermError('请输入角色ID'); return; }
+  // Role permissions
+  const handleRolePerms = async () => {
+    if (!rolePermId.trim()) return;
     setRolePermLoading(true);
-    setRolePermError('');
     setRolePermData(null);
     try {
-      const result = await permissionService.getPermissionsByRole(parseInt(rolePermRoleId));
+      const result = await permissionService.getPermissionsByRole(parseInt(rolePermId));
       if (result.success) setRolePermData(result.data || []);
-      else setRolePermError(result.message || '查询失败');
     } catch (err) {
-      setRolePermError(err.message || '请求失败');
+      setRolePermData([]);
     } finally {
       setRolePermLoading(false);
     }
   };
-  // Stats
-  const handleGetStats = async () => {
-    try {
-      const result = await permissionService.getPermissionStats();
-      if (result.success) alert(`权限统计: ${result.stats?.permissionCount || 'N/A'}`);
-    } catch (err) { alert(`获取统计失败: ${err.message}`); }
-  };
-
-  // Health check
-  const handleHealthCheck = async () => {
-    try {
-      const result = await permissionService.healthCheck();
-      if (result.success) alert(`权限服务健康: ${result.message}\n权限数: ${result.permissionCount}`);
-    } catch (err) { alert(`健康检查失败: ${err.message}`); }
-  };
 
   // Search by code
-  const handleSearchByCode = async () => {
-    const code = prompt('请输入权限编码:');
-    if (code) {
-      try {
-        const result = await permissionService.getPermissionByCode(code);
-        if (result.success) {
-          const p = result.data;
-          alert(`权限:\n编码: ${p?.code}\n名称: ${p?.name}\n类型: ${p?.type}\n描述: ${p?.description || '无'}`);
-        } else alert(`查询失败: ${result.message}`);
-      } catch (err) { alert(`查询失败: ${err.message}`); }
+  const handleCodeSearch = async () => {
+    if (!codeSearch.trim()) return;
+    try {
+      const result = await permissionService.getPermissionByCode(codeSearch.trim());
+      setCodeSearchResult(result);
+    } catch (err) {
+      setCodeSearchResult({ success: false, message: err.message });
     }
   };
 
-  const handleModalClose = (e) => {
-    if (e.target === e.currentTarget) setShowCreateModal(false);
-  };
+  const statCount = stats?.stats?.permissionCount ?? stats?.permissionCount ?? permissions.length;
 
   return (
-    <div className="permissions-container">
-      <div className="permissions-header">
-        <h2>权限管理</h2>
-        <div className="permissions-actions">
-          <button className="btn btn-create" onClick={openCreateModal}>创建权限</button>
-          <button className={'btn btn-toggle' + (useAsync ? ' active' : '')} onClick={toggleAsyncMode}>
-            {useAsync ? '异步模式' : '同步模式'}
-          </button>
-          <div className="type-filter">
-            {permissionTypes.map(type => (
-              <button key={type.value}
-                className={'btn-type' + (filterType === type.value ? ' active' : '')}
-                onClick={() => handleTypeFilter(type.value)}>
-                {type.label}
-              </button>
-            ))}
-          </div>
-          <button className="btn btn-secondary" onClick={handleSearchByCode}>按编码查询</button>
-          <button className="btn btn-secondary" onClick={handleGetStats}>获取统计</button>
-          <button className="btn btn-health" onClick={handleHealthCheck}>健康检查</button>
+    <div className="pm-page">
+      {/* Page header */}
+      <div className="pm-page-header">
+        <div className="pm-page-title">
+          <h2>权限管理</h2>
+          <span className="pm-page-sub">管理 API、菜单、按钮及数据权限</span>
+        </div>
+        <div className="pm-page-actions">
+          <span className={`pm-mode-badge ${useAsync ? 'async' : ''}`}
+            onClick={() => setUseAsync(!useAsync)}>
+            {useAsync ? '⚡ 异步模式' : '同步模式'}
+          </span>
+          <button className="pm-btn pm-btn-primary" onClick={openCreate}>+ 创建权限</button>
         </div>
       </div>
 
-      {error && <div className="alert alert-error"><strong>错误:</strong> {error}</div>}
+      {/* Stats row */}
+      <div className="pm-stats-row">
+        <div className="pm-stat-card">
+          <span className="pm-stat-num">{statCount}</span>
+          <span className="pm-stat-label">权限总数</span>
+        </div>
+        <div className="pm-stat-card">
+          <span className="pm-stat-num">{permissions.filter(p => p.type === 'API').length || '-'}</span>
+          <span className="pm-stat-label">API 权限</span>
+        </div>
+        <div className="pm-stat-card">
+          <span className="pm-stat-num">{permissions.filter(p => p.type === 'MENU').length || '-'}</span>
+          <span className="pm-stat-label">菜单权限</span>
+        </div>
+        <div className="pm-stat-card">
+          <span className="pm-stat-num">{permissions.filter(p => p.type === 'BUTTON').length || '-'}</span>
+          <span className="pm-stat-label">按钮权限</span>
+        </div>
+      </div>
 
-      <div className="admin-toolbar">
-        <div className="toolbar-group">
-          <span className="toolbar-label">批量创建:</span>
-          <input type="number" className="toolbar-input" value={batchCount}
-            onChange={(e) => setBatchCount(parseInt(e.target.value) || 10)} min="1" max="1000" />
-          <button className="btn btn-batch" onClick={handleBatchCreate} disabled={batchLoading}>
-            {batchLoading ? '创建中...' : '批量创建权限'}
-          </button>
+      {/* Tab bar */}
+      <div className="pm-tabs">
+        <button className={`pm-tab ${activeTab === 'list' ? 'active' : ''}`}
+          onClick={() => setActiveTab('list')}>权限列表</button>
+        <button className={`pm-tab ${activeTab === 'tools' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tools')}>权限检查工具</button>
+      </div>
+
+      {error && <div className="pm-alert pm-alert-error">{error}</div>}
+
+      {/* Tab: Permission List */}
+      {activeTab === 'list' && (
+        <div className="pm-card">
+          {/* Toolbar */}
+          <div className="pm-toolbar">
+            <div className="pm-toolbar-left">
+              <div className="pm-type-filters">
+                {PERMISSION_TYPES.map(t => (
+                  <button key={t.value}
+                    className={`pm-filter-chip ${filterType === t.value ? 'active' : ''}`}
+                    onClick={() => setFilterType(t.value)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="pm-code-search">
+                <input
+                  type="text"
+                  placeholder="按编码搜索..."
+                  value={codeSearch}
+                  onChange={(e) => setCodeSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCodeSearch()}
+                />
+                <button className="pm-btn pm-btn-sm" onClick={handleCodeSearch}>搜索</button>
+              </div>
+            </div>
+            <div className="pm-toolbar-right">
+              <div className="pm-batch-group">
+                <input type="number" className="pm-batch-input" value={batchCount}
+                  onChange={(e) => setBatchCount(parseInt(e.target.value) || 10)}
+                  min="1" max="1000" />
+                <button className="pm-btn pm-btn-outline" onClick={handleBatch} disabled={batchLoading}>
+                  {batchLoading ? '创建中...' : '批量创建'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {codeSearchResult && (
+            <div className={`pm-search-result ${codeSearchResult.success ? 'success' : 'error'}`}>
+              {codeSearchResult.success && codeSearchResult.data ? (
+                <span>
+                  找到权限: <code>{codeSearchResult.data.code}</code> — {codeSearchResult.data.name}
+                  <span className={typeBadgeClass(codeSearchResult.data.type)}>{codeSearchResult.data.type}</span>
+                </span>
+              ) : (
+                <span>{codeSearchResult.message || '未找到'}</span>
+              )}
+              <button className="pm-search-close" onClick={() => { setCodeSearchResult(null); setCodeSearch(''); }}>&times;</button>
+            </div>
+          )}
+
           {batchResult && (
-            <span className={'toolbar-result ' + (batchResult.success ? 'success' : 'error')}>
-              {batchResult.success ? '成功创建' : '失败'}: {batchResult.message || ''}
-            </span>
+            <div className={`pm-search-result ${batchResult.success ? 'success' : 'error'}`}>
+              <span>{batchResult.success ? '批量创建成功' : '批量创建失败'}: {batchResult.message || ''}</span>
+              <button className="pm-search-close" onClick={() => setBatchResult(null)}>&times;</button>
+            </div>
+          )}
+
+          {/* Table */}
+          <div className="pm-table-wrap">
+            {loading ? (
+              <div className="pm-loading">加载中...</div>
+            ) : permissions.length === 0 ? (
+              <div className="pm-empty">暂无权限数据</div>
+            ) : (
+              <table className="pm-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 70 }}>ID</th>
+                    <th style={{ width: 170 }}>编码</th>
+                    <th style={{ width: 140 }}>名称</th>
+                    <th style={{ width: 90 }}>类型</th>
+                    <th>描述</th>
+                    <th style={{ width: 180 }}>URL</th>
+                    <th style={{ width: 80 }}>方法</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {permissions.map(p => (
+                    <tr key={p.id}>
+                      <td className="pm-td-id">{p.id}</td>
+                      <td><code className="pm-code">{p.code}</code></td>
+                      <td className="pm-td-name">{p.name}</td>
+                      <td><span className={typeBadgeClass(p.type)}>{p.type}</span></td>
+                      <td className="pm-td-desc">{p.description || '-'}</td>
+                      <td className="pm-td-url">{p.url || '-'}</td>
+                      <td>{p.method ? <span className="pm-method">{p.method}</span> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Pagination */}
+          {filterType === 'ALL' && pagination.pages > 1 && (
+            <div className="pm-pagination">
+              <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page <= 1}>
+                上一页
+              </button>
+              <span className="pm-page-info">
+                {pagination.page} / {pagination.pages} 页 (共 {pagination.total} 条)
+              </span>
+              <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page >= pagination.pages}>
+                下一页
+              </button>
+            </div>
           )}
         </div>
-        <div className="toolbar-group">
-          <button className="btn btn-test" onClick={openCheckUrlModal}>检查URL权限</button>
-          <button className="btn btn-test" onClick={openUserPermModal}>用户权限</button>
-          <button className="btn btn-test" onClick={openRolePermModal}>角色权限</button>
-        </div>
-      </div>
-      <div className="permissions-table-container">
-        {loading ? (
-          <div className="loading">加载中...</div>
-        ) : (
-          <>
-            <table className="permissions-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>编码</th>
-                  <th>名称</th>
-                  <th>类型</th>
-                  <th>描述</th>
-                  <th>URL</th>
-                  <th>方法</th>
-                </tr>
-              </thead>
-              <tbody>
-                {permissions.length > 0 ? (
-                  permissions.map(p => (
-                    <tr key={p.id}>
-                      <td>{p.id}</td>
-                      <td><span className="permission-code">{p.code}</span></td>
-                      <td>{p.name}</td>
-                      <td><span className={'permission-type type-' + (p.type || '').toLowerCase()}>{p.type}</span></td>
-                      <td>{p.description || '-'}</td>
-                      <td>{p.url || '-'}</td>
-                      <td>{p.method || '-'}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan="7" className="no-data">暂无权限数据</td></tr>
-                )}
-              </tbody>
-            </table>
-            {filterType === 'ALL' && pagination.pages > 1 && (
-              <div className="pagination">
-                <button className="page-btn" onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}>上一页</button>
-                <span className="page-info">第 {pagination.page} / {pagination.pages} 页 ({pagination.total} 条)</span>
-                <button className="page-btn" onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.pages}>下一页</button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="permissions-info">
-        <p>当前模式: <strong>{useAsync ? '异步(虚拟线程)' : '同步'}</strong></p>
-        <p>过滤类型: <strong>{permissionTypes.find(t => t.value === filterType)?.label}</strong></p>
-      </div>
-      {/* Create Permission Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={handleModalClose}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>创建权限</h3>
-              <button className="btn-close" onClick={() => setShowCreateModal(false)}>&times;</button>
-            </div>
-            <form onSubmit={handleCreatePermission}>
-              {formError && <div className="alert alert-error">{formError}</div>}
-              {formSuccess && <div className="alert alert-success">{formSuccess}</div>}
-              <div className="modal-form-grid">
-                <div className="form-group">
-                  <label>编码 *</label>
-                  <input type="text" name="code" value={formData.code}
-                    onChange={handleFormChange} required disabled={formLoading}
-                    placeholder="如: user:create" />
-                </div>
-                <div className="form-group">
-                  <label>名称 *</label>
-                  <input type="text" name="name" value={formData.name}
-                    onChange={handleFormChange} required disabled={formLoading}
-                    placeholder="如: 创建用户" />
-                </div>
-                <div className="form-group">
-                  <label>类型 *</label>
-                  <select name="type" value={formData.type}
-                    onChange={handleFormChange} required disabled={formLoading}>
-                    <option value="API">API权限</option>
-                    <option value="MENU">菜单权限</option>
-                    <option value="BUTTON">按钮权限</option>
-                    <option value="DATA">数据权限</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>HTTP方法</label>
-                  <select name="method" value={formData.method}
-                    onChange={handleFormChange} disabled={formLoading}>
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                    <option value="PUT">PUT</option>
-                    <option value="DELETE">DELETE</option>
-                    <option value="PATCH">PATCH</option>
-                    <option value="">不限</option>
-                  </select>
-                </div>
-                <div className="form-group form-group-full">
-                  <label>URL路径</label>
-                  <input type="text" name="url" value={formData.url}
-                    onChange={handleFormChange} disabled={formLoading}
-                    placeholder="如: /api/users/**" />
-                </div>
-                <div className="form-group form-group-full">
-                  <label>描述</label>
-                  <textarea name="description" value={formData.description}
-                    onChange={handleFormChange} rows="2" disabled={formLoading}
-                    placeholder="权限描述" />
-                </div>
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="btn btn-create" disabled={formLoading}>
-                  {formLoading ? '创建中...' : '创建'}
-                </button>
-                <button type="button" className="btn btn-cancel" onClick={() => setShowCreateModal(false)}
-                  disabled={formLoading}>取消</button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
-      {/* Check URL Permission Modal */}
-      {showCheckUrlModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCheckUrlModal(false); }}>
-          <div className="modal-content" style={{ maxWidth: '480px' }}>
-            <div className="modal-header">
-              <h3>检查URL权限</h3>
-              <button className="btn-close" onClick={() => setShowCheckUrlModal(false)}>&times;</button>
-            </div>
-            <div className="form-group">
-              <label>用户ID *</label>
-              <input type="number" value={checkUrlUserId}
-                onChange={(e) => setCheckUrlUserId(e.target.value)}
-                placeholder="输入用户ID" disabled={checkUrlLoading} min="1" />
-            </div>
-            <div className="form-group">
-              <label>URL *</label>
-              <input type="text" value={checkUrlUrl}
-                onChange={(e) => setCheckUrlUrl(e.target.value)}
-                placeholder="如: /api/users" disabled={checkUrlLoading} />
-            </div>
-            <div className="form-group">
-              <label>HTTP方法</label>
-              <select value={checkUrlMethod}
-                onChange={(e) => setCheckUrlMethod(e.target.value)} disabled={checkUrlLoading}>
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-                <option value="PUT">PUT</option>
-                <option value="DELETE">DELETE</option>
+
+      {/* Tab: Check Tools */}
+      {activeTab === 'tools' && (
+        <div className="pm-tools-grid">
+          {/* Check URL Permission */}
+          <div className="pm-card pm-tool-card">
+            <h4>检查 URL 权限</h4>
+            <p className="pm-tool-desc">验证用户是否拥有访问指定 URL 的权限</p>
+            <div className="pm-tool-form">
+              <input type="number" placeholder="用户 ID"
+                value={checkUrlForm.userId}
+                onChange={(e) => setCheckUrlForm(prev => ({ ...prev, userId: e.target.value }))} />
+              <input type="text" placeholder="URL 路径，如 /api/users"
+                value={checkUrlForm.url}
+                onChange={(e) => setCheckUrlForm(prev => ({ ...prev, url: e.target.value }))} />
+              <select value={checkUrlForm.method}
+                onChange={(e) => setCheckUrlForm(prev => ({ ...prev, method: e.target.value }))}>
+                {HTTP_METHODS.filter(Boolean).map(m => <option key={m} value={m}>{m}</option>)}
               </select>
+              <button className="pm-btn pm-btn-primary" onClick={handleCheckUrl} disabled={checkUrlLoading}>
+                {checkUrlLoading ? '检查中...' : '检查'}
+              </button>
             </div>
-            <button className="btn btn-test" onClick={handleCheckUrl} disabled={checkUrlLoading}
-              style={{ marginBottom: '16px', width: '100%' }}>
-              {checkUrlLoading ? '检查中...' : '检查权限'}
-            </button>
             {checkUrlResult && (
-              <div className={'alert ' + (checkUrlResult.success ? 'alert-success' : 'alert-error')}>
-                {checkUrlResult.hasPermission !== false
-                  ? '用户拥有该URL权限'
-                  : '用户没有该URL权限'}
+              <div className={`pm-tool-result ${checkUrlResult.success && checkUrlResult.hasPermission !== false ? 'success' : 'denied'}`}>
+                {checkUrlResult.success && checkUrlResult.hasPermission !== false
+                  ? '该用户拥有此 URL 权限'
+                  : checkUrlResult.message || '该用户没有此 URL 权限'}
               </div>
             )}
-            <div className="modal-actions">
-              <button className="btn btn-cancel" onClick={() => setShowCheckUrlModal(false)}>关闭</button>
-            </div>
           </div>
-        </div>
-      )}
-      {/* View User Permissions Modal */}
-      {showUserPermModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowUserPermModal(false); }}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>查看用户权限</h3>
-              <button className="btn-close" onClick={() => setShowUserPermModal(false)}>&times;</button>
+
+          {/* View User Permissions */}
+          <div className="pm-card pm-tool-card">
+            <h4>查看用户权限</h4>
+            <p className="pm-tool-desc">获取指定用户的所有权限列表</p>
+            <div className="pm-tool-form">
+              <input type="number" placeholder="用户 ID"
+                value={userPermId}
+                onChange={(e) => setUserPermId(e.target.value)} />
+              <button className="pm-btn pm-btn-primary" onClick={handleUserPerms} disabled={userPermLoading}>
+                {userPermLoading ? '查询中...' : '查询'}
+              </button>
             </div>
-            {userPermError && <div className="alert alert-error">{userPermError}</div>}
-            <div className="form-group">
-              <label>用户ID</label>
-              <input type="number" value={userPermUserId}
-                onChange={(e) => setUserPermUserId(e.target.value)}
-                placeholder="输入用户ID" disabled={userPermLoading} min="1" />
-            </div>
-            <button className="btn btn-test" onClick={handleGetUserPerms} disabled={userPermLoading}
-              style={{ marginBottom: '16px', width: '100%' }}>
-              {userPermLoading ? '查询中...' : '查询'}
-            </button>
             {userPermData && (
-              <div>
-                <h4 style={{ margin: '0 0 8px 0', color: '#4a5568' }}>权限列表</h4>
+              <div className="pm-tool-result-list">
                 {userPermData.length === 0 ? (
-                  <div style={{ color: '#a0aec0', padding: '16px', textAlign: 'center' }}>该用户暂无权限</div>
+                  <span className="pm-text-muted">该用户暂无权限</span>
                 ) : (
-                  <table className="permissions-table" style={{ fontSize: '13px' }}>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>编码</th>
-                        <th>名称</th>
-                        <th>类型</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {userPermData.map(p => (
-                        <tr key={p.id || p.permissionId}>
-                          <td>{p.id || p.permissionId}</td>
-                          <td><span className="permission-code">{p.code || p.permissionCode}</span></td>
-                          <td>{p.name || p.permissionName}</td>
-                          <td><span className={'permission-type type-' + ((p.type || '').toLowerCase())}>{p.type || ''}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="pm-mini-list">
+                    {userPermData.map(p => (
+                      <span key={p.id || p.permissionId} className="pm-mini-item">
+                        <code>{p.code || p.permissionCode}</code>
+                        <span className="pm-text-muted">{p.name || p.permissionName}</span>
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
-            <div className="modal-actions">
-              <button className="btn btn-cancel" onClick={() => setShowUserPermModal(false)}>关闭</button>
+          </div>
+
+          {/* View Role Permissions */}
+          <div className="pm-card pm-tool-card">
+            <h4>查看角色权限</h4>
+            <p className="pm-tool-desc">获取指定角色的所有权限列表</p>
+            <div className="pm-tool-form">
+              <input type="number" placeholder="角色 ID"
+                value={rolePermId}
+                onChange={(e) => setRolePermId(e.target.value)} />
+              <button className="pm-btn pm-btn-primary" onClick={handleRolePerms} disabled={rolePermLoading}>
+                {rolePermLoading ? '查询中...' : '查询'}
+              </button>
             </div>
+            {rolePermData && (
+              <div className="pm-tool-result-list">
+                {rolePermData.length === 0 ? (
+                  <span className="pm-text-muted">该角色暂无权限</span>
+                ) : (
+                  <div className="pm-mini-list">
+                    {rolePermData.map(p => (
+                      <span key={p.id || p.permissionId} className="pm-mini-item">
+                        <code>{p.code || p.permissionCode}</code>
+                        <span className="pm-text-muted">{p.name || p.permissionName}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* View Role Permissions Modal */}
-      {showRolePermModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowRolePermModal(false); }}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>查看角色权限</h3>
-              <button className="btn-close" onClick={() => setShowRolePermModal(false)}>&times;</button>
-            </div>
-            {rolePermError && <div className="alert alert-error">{rolePermError}</div>}
-            <div className="form-group">
-              <label>角色ID</label>
-              <input type="number" value={rolePermRoleId}
-                onChange={(e) => setRolePermRoleId(e.target.value)}
-                placeholder="输入角色ID" disabled={rolePermLoading} min="1" />
-            </div>
-            <button className="btn btn-test" onClick={handleGetRolePerms} disabled={rolePermLoading}
-              style={{ marginBottom: '16px', width: '100%' }}>
-              {rolePermLoading ? '查询中...' : '查询'}
-            </button>
-            {rolePermData && (
-              <div>
-                <h4 style={{ margin: '0 0 8px 0', color: '#4a5568' }}>权限列表</h4>
-                {rolePermData.length === 0 ? (
-                  <div style={{ color: '#a0aec0', padding: '16px', textAlign: 'center' }}>该角色暂无权限</div>
-                ) : (
-                  <table className="permissions-table" style={{ fontSize: '13px' }}>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>编码</th>
-                        <th>名称</th>
-                        <th>类型</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rolePermData.map(p => (
-                        <tr key={p.id || p.permissionId}>
-                          <td>{p.id || p.permissionId}</td>
-                          <td><span className="permission-code">{p.code || p.permissionCode}</span></td>
-                          <td>{p.name || p.permissionName}</td>
-                          <td><span className={'permission-type type-' + ((p.type || '').toLowerCase())}>{p.type || ''}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+      {/* Create Modal */}
+      {showCreate && (
+        <Modal title="创建权限" onClose={() => setShowCreate(false)}>
+          <form onSubmit={handleCreate}>
+            {formError && <div className="pm-alert pm-alert-error">{formError}</div>}
+            {formSuccess && <div className="pm-alert pm-alert-success">{formSuccess}</div>}
+            <div className="pm-form-grid">
+              <div className="pm-form-group">
+                <label>编码 *</label>
+                <input type="text" name="code" value={formData.code}
+                  onChange={handleFormChange} required disabled={formLoading}
+                  placeholder="如: user:create" />
               </div>
-            )}
-            <div className="modal-actions">
-              <button className="btn btn-cancel" onClick={() => setShowRolePermModal(false)}>关闭</button>
+              <div className="pm-form-group">
+                <label>名称 *</label>
+                <input type="text" name="name" value={formData.name}
+                  onChange={handleFormChange} required disabled={formLoading}
+                  placeholder="如: 创建用户" />
+              </div>
+              <div className="pm-form-group">
+                <label>类型 *</label>
+                <select name="type" value={formData.type}
+                  onChange={handleFormChange} required disabled={formLoading}>
+                  <option value="API">API 权限</option>
+                  <option value="MENU">菜单权限</option>
+                  <option value="BUTTON">按钮权限</option>
+                  <option value="DATA">数据权限</option>
+                </select>
+              </div>
+              <div className="pm-form-group">
+                <label>HTTP 方法</label>
+                <select name="method" value={formData.method}
+                  onChange={handleFormChange} disabled={formLoading}>
+                  {HTTP_METHODS.map(m => <option key={m} value={m}>{m || '不限'}</option>)}
+                </select>
+              </div>
+              <div className="pm-form-group pm-form-full">
+                <label>URL 路径</label>
+                <input type="text" name="url" value={formData.url}
+                  onChange={handleFormChange} disabled={formLoading}
+                  placeholder="如: /api/users/**" />
+              </div>
+              <div className="pm-form-group pm-form-full">
+                <label>描述</label>
+                <textarea name="description" value={formData.description}
+                  onChange={handleFormChange} rows="2" disabled={formLoading}
+                  placeholder="权限用途说明" />
+              </div>
             </div>
-          </div>
-        </div>
+            <div className="pm-modal-actions">
+              <button type="submit" className="pm-btn pm-btn-primary" disabled={formLoading}>
+                {formLoading ? '创建中...' : '确认创建'}
+              </button>
+              <button type="button" className="pm-btn pm-btn-ghost" onClick={() => setShowCreate(false)}
+                disabled={formLoading}>取消</button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

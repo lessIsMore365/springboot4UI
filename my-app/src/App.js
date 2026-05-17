@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { authService } from './services';
 
 // 导入页面组件
@@ -15,11 +15,14 @@ import PaymentManagement from './components/payment/PaymentManagement';
 import ReconciliationManagement from './components/reconciliation/ReconciliationManagement';
 import Java21Demo from './components/java21/Java21Demo';
 import JvmMonitor from './components/jvm/JvmMonitor';
+import DbMonitor from './components/db/DbMonitor';
+import ServerMonitor from './components/server/ServerMonitor';
+import Sidebar from './components/sidebar/Sidebar';
 
 import './App.css';
 
 /**
- * 错误边界组件（用于捕获渲染错误）
+ * 错误边界组件
  */
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -28,155 +31,35 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
     console.error('React 渲染错误:', error, errorInfo);
-    this.setState({
-      error: error,
-      errorInfo: errorInfo
-    });
+    this.setState({ error, errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
+      const msg = this.state.error?.message || String(this.state.error);
       return (
-        <div className="error-boundary" style={{ padding: '20px', backgroundColor: '#fed7d7', color: '#742a2a', borderRadius: '8px', margin: '20px' }}>
-          <h2>应用出现错误</h2>
-          <p>抱歉，应用渲染时发生错误。请刷新页面或检查控制台。</p>
+        <div style={{ padding: '24px', backgroundColor: '#fef2f2', color: '#991b1b', borderRadius: '8px', margin: '20px', fontFamily: 'sans-serif' }}>
+          <h2 style={{ margin: '0 0 8px' }}>应用出现错误</h2>
+          <p style={{ margin: '0 0 12px', color: '#b91c1c' }}>{msg}</p>
           {this.state.error && (
-            <details style={{ marginTop: '10px', fontSize: '14px' }}>
-              <summary>错误详情</summary>
-              <pre style={{ whiteSpace: 'pre-wrap', background: '#fff', padding: '10px', borderRadius: '4px' }}>
-                {this.state.error.toString()}
+            <details style={{ marginTop: '8px', fontSize: '14px', background: '#fff', padding: '10px', borderRadius: '6px' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#991b1b' }}>错误详情</summary>
+              <pre style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0', color: '#333' }}>
+                {this.state.error.stack || this.state.error.toString()}
               </pre>
             </details>
           )}
         </div>
       );
     }
-
     return this.props.children;
   }
 }
-
-/**
- * 导航栏组件
- */
-const Navbar = ({ isAuthenticated, currentUser, onLogout, isAuthPage }) => {
-  const location = useLocation();
-
-  // 在登录/注册页面隐藏导航栏，使其看起来像独立的页面
-  if (isAuthPage) {
-    return null;
-  }
-
-  // 检查当前路径是否激活
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
-  return (
-    <nav className="navbar">
-      <div className="navbar-container">
-        <Link to="/" className="navbar-brand">
-          <span>RBAC System</span>
-        </Link>
-
-        <ul className="navbar-menu">
-          <li className="navbar-item">
-            <Link to="/" className={`navbar-link ${isActive('/') ? 'active' : ''}`}>
-              🏠 首页
-            </Link>
-          </li>
-
-          {!isAuthenticated ? (
-            <>
-              <li className="navbar-item">
-                <Link to="/auth/login" className={`navbar-link ${isActive('/auth/login') ? 'active' : ''}`}>
-                  🔐 登录
-                </Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/auth/register" className={`navbar-link ${isActive('/auth/register') ? 'active' : ''}`}>
-                  📝 注册
-                </Link>
-              </li>
-            </>
-          ) : (
-            <>
-              <li className="navbar-item">
-                <Link to="/users" className={`navbar-link ${isActive('/users') ? 'active' : ''}`}>
-                  👥 用户管理
-                </Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/roles" className={`navbar-link ${isActive('/roles') ? 'active' : ''}`}>
-                  👑 角色管理
-                </Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/permissions" className={`navbar-link ${isActive('/permissions') ? 'active' : ''}`}>
-                  🔑 权限管理
-                </Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/redis" className={`navbar-link ${isActive('/redis') ? 'active' : ''}`}>
-                  🗃️ Redis
-                </Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/payment" className={`navbar-link ${isActive('/payment') ? 'active' : ''}`}>
-                  💰 支付
-                </Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/reconciliation" className={`navbar-link ${isActive('/reconciliation') ? 'active' : ''}`}>
-                  📊 对帐
-                </Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/java21" className={`navbar-link ${isActive('/java21') ? 'active' : ''}`}>
-                  ☕ Java 21
-                </Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/jvm" className={`navbar-link ${isActive('/jvm') ? 'active' : ''}`}>
-                  📈 JVM
-                </Link>
-              </li>
-            </>
-          )}
-
-          <li className="navbar-item">
-            <Link to="/demo" className={`navbar-link ${isActive('/demo') ? 'active' : ''}`}>
-              ⚡ 演示
-            </Link>
-          </li>
-        </ul>
-
-        <div className="navbar-auth">
-          {isAuthenticated ? (
-            <>
-              <div className="auth-info">
-                欢迎, <strong>{currentUser?.username || '用户'}</strong>
-                {currentUser?.roles && ` (${currentUser.roles})`}
-              </div>
-              <button className="btn-logout" onClick={onLogout}>
-                登出
-              </button>
-            </>
-          ) : (
-            <div className="auth-info">
-              请先登录
-            </div>
-          )}
-        </div>
-      </div>
-    </nav>
-  );
-};
 
 /**
  * 私有路由组件
@@ -201,7 +84,25 @@ const Footer = () => {
 };
 
 /**
- * 主应用组件
+ * 页面标题映射
+ */
+const pageTitles = {
+  '/': '首页',
+  '/users': '用户管理',
+  '/roles': '角色管理',
+  '/permissions': '权限管理',
+  '/redis': 'Redis 操作',
+  '/payment': '支付管理',
+  '/reconciliation': '对帐管理',
+  '/java21': 'Java 21 新特性',
+  '/jvm': 'JVM 监控',
+  '/db-monitor': '数据库监控',
+  '/server-monitor': '服务器监控',
+  '/demo': '演示',
+};
+
+/**
+ * 主应用内容
  */
 const AppContent = () => {
   const location = useLocation();
@@ -209,22 +110,16 @@ const AppContent = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 判断是否在认证页面（登录/注册），用于隐藏导航和页脚
   const isAuthPage = location.pathname.startsWith('/auth/');
+  const pageTitle = pageTitles[location.pathname] || '';
 
-  // 检查认证状态
   useEffect(() => {
     const checkAuth = () => {
       try {
-        console.log('检查认证状态...');
         const authenticated = authService.isAuthenticated();
-        console.log('认证状态:', authenticated);
         setIsAuthenticated(authenticated);
-
         if (authenticated) {
-          const user = authService.getCurrentUser();
-          console.log('当前用户:', user);
-          setCurrentUser(user);
+          setCurrentUser(authService.getCurrentUser());
         }
       } catch (error) {
         console.error('检查认证状态时出错:', error);
@@ -234,118 +129,156 @@ const AppContent = () => {
     };
 
     checkAuth();
-
-    // 安全超时：确保 loading 状态不会无限期卡住
-    const timeoutId = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
-
+    const timeoutId = setTimeout(() => setLoading(false), 3000);
     return () => clearTimeout(timeoutId);
   }, []);
 
-  // 处理登录成功
   const handleLoginSuccess = (user) => {
     setIsAuthenticated(true);
     setCurrentUser(user);
   };
 
-  // 处理登出
   const handleLogout = () => {
     authService.logout();
     setIsAuthenticated(false);
     setCurrentUser(null);
   };
 
-  // 处理注册成功
-  const handleRegisterSuccess = () => {
-    // 注册成功后，Register组件会自动跳转到登录页
-  };
-
-  console.log('AppContent 渲染', { loading, isAuthenticated });
-
   if (loading) {
     return (
-      <div className="App" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <div>加载中...</div>
       </div>
     );
   }
 
+  const routes = (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/demo" element={<Demo />} />
+      <Route path="/users" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <UserList />
+        </PrivateRoute>
+      } />
+      <Route path="/roles" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <RoleList />
+        </PrivateRoute>
+      } />
+      <Route path="/permissions" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <PermissionList />
+        </PrivateRoute>
+      } />
+      <Route path="/redis" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <RedisOperations />
+        </PrivateRoute>
+      } />
+      <Route path="/payment" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <PaymentManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/reconciliation" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <ReconciliationManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/java21" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <Java21Demo />
+        </PrivateRoute>
+      } />
+      <Route path="/jvm" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <JvmMonitor />
+        </PrivateRoute>
+      } />
+      <Route path="/db-monitor" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <DbMonitor />
+        </PrivateRoute>
+      } />
+      <Route path="/server-monitor" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <ServerMonitor />
+        </PrivateRoute>
+      } />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
+
+  // 认证页面：全屏布局，无侧边栏无顶栏
+  if (isAuthPage) {
+    return (
+      <div className="auth-layout-full">
+        <Routes>
+          <Route path="/auth/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="/auth/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/auth/login" />} />
+        </Routes>
+      </div>
+    );
+  }
+
+  // 未登录：无侧边栏，顶栏显示登录/注册入口
+  if (!isAuthenticated) {
+    return (
+      <div className="public-layout">
+        <header className="public-topbar">
+          <div className="public-topbar-inner">
+            <a href="/" className="public-logo">🛡️ RBAC System</a>
+            <nav className="public-nav">
+              <a href="#/auth/login" className="public-nav-link">登录</a>
+              <a href="#/auth/register" className="public-nav-btn">注册</a>
+            </nav>
+          </div>
+        </header>
+        <main className="public-content">
+          {routes}
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // 已登录：侧边栏 + 内容区
   return (
-    <div className="App">
-      <Navbar
+    <div className="app-layout">
+      <Sidebar
         isAuthenticated={isAuthenticated}
         currentUser={currentUser}
         onLogout={handleLogout}
-        isAuthPage={isAuthPage}
       />
 
-      <main className={`main-content${isAuthPage ? ' auth-layout' : ''}`}>
-        <Routes>
-          {/* 公开路由 */}
-          <Route path="/" element={<Home />} />
-          <Route path="/auth/login" element={
-            <Login onLoginSuccess={handleLoginSuccess} />
-          } />
-          <Route path="/auth/register" element={
-            <Register onRegisterSuccess={handleRegisterSuccess} />
-          } />
-          <Route path="/demo" element={<Demo />} />
+      <div className="main-area">
+        <header className="topbar">
+          <div className="topbar-left">
+            <span className="topbar-breadcrumb">
+              {pageTitle && <strong>{pageTitle}</strong>}
+            </span>
+          </div>
+          <div className="topbar-right">
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+              {currentUser?.username}
+            </span>
+          </div>
+        </header>
 
-          {/* 需要认证的路由 */}
-          <Route path="/users" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <UserList />
-            </PrivateRoute>
-          } />
-          <Route path="/roles" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <RoleList />
-            </PrivateRoute>
-          } />
-          <Route path="/permissions" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <PermissionList />
-            </PrivateRoute>
-          } />
-          <Route path="/redis" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <RedisOperations />
-            </PrivateRoute>
-          } />
-          <Route path="/payment" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <PaymentManagement />
-            </PrivateRoute>
-          } />
-          <Route path="/reconciliation" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <ReconciliationManagement />
-            </PrivateRoute>
-          } />
-          <Route path="/java21" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <Java21Demo />
-            </PrivateRoute>
-          } />
-          <Route path="/jvm" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <JvmMonitor />
-            </PrivateRoute>
-          } />
+        <main className="main-content-sidebar">
+          {routes}
+        </main>
 
-          {/* 默认重定向 */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </main>
-
-      {!isAuthPage && <Footer />}
+        <Footer />
+      </div>
     </div>
   );
 };
 
 /**
- * 应用根组件（包含路由）
+ * 应用根组件
  */
 const App = () => {
   return (

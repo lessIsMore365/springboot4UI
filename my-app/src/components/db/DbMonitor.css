@@ -1,0 +1,449 @@
+/* ========== 数据库监控页面 ========== */
+
+.db-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ---------- Header ---------- */
+.db-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.db-header-left h2 {
+  margin: 0 0 3px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.db-header-sub {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.db-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.db-refresh-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+}
+
+.db-refresh-toggle input {
+  accent-color: #6366f1;
+}
+
+/* ---------- Buttons ---------- */
+.db-btn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+}
+
+.db-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+
+.db-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.db-btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+/* ---------- Quick stats ---------- */
+.db-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.db-stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.db-stat-val {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.db-stat-label {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ---------- Tabs ---------- */
+.db-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 1;
+}
+
+.db-tab {
+  padding: 9px 22px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #94a3b8;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.db-tab:hover {
+  color: #64748b;
+}
+
+.db-tab.active {
+  color: #6366f1;
+  border-bottom-color: #6366f1;
+}
+
+/* ---------- Card ---------- */
+.db-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 24px 28px;
+}
+
+.db-card h4 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* ---------- Info grid ---------- */
+.db-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.db-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.db-info-item label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.db-info-item span {
+  font-size: 14px;
+  color: #334155;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.db-mono {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px !important;
+}
+
+.db-warn {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+
+/* ---------- Pool bars ---------- */
+.db-pool-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.db-pool-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.db-pool-bar-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.db-pool-bar-label strong {
+  color: #1e293b;
+}
+
+.db-pool-bar {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.db-pool-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.db-pool-bar-fill.active {
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
+.db-pool-bar-fill.idle {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.db-pool-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+/* ---------- Health row ---------- */
+.db-health-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #475569;
+}
+
+.db-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- Uptime ---------- */
+.db-uptime {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* ---------- Table ---------- */
+.db-table-wrap {
+  overflow-x: auto;
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.db-table thead {
+  background: #f8fafc;
+}
+
+.db-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.db-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.db-table tbody tr:hover {
+  background: #fafbfd;
+}
+
+.db-td-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+}
+
+.db-td-time {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ---------- Latency ---------- */
+.db-latency-card {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 20px 24px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+}
+
+.db-latency-main {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.db-latency-val {
+  font-size: 48px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.db-latency-unit {
+  font-size: 16px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.db-latency-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.db-latency-info strong {
+  color: #334155;
+}
+
+/* ---------- Misc ---------- */
+.db-loading,
+.db-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.db-alert {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.db-alert-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* ---------- Slow SQL ---------- */
+.db-slowsql-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.db-sql-text {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 11px !important;
+  color: #4a5568;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .db-quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .db-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .db-pool-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .db-quick-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .db-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-pool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-latency-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .db-header {
+    flex-direction: column;
+  }
+}

@@ -7,11 +7,9 @@ const Login = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Click-based Chinese character captcha state
   const [captchaKey, setCaptchaKey] = useState('');
   const [captchaImage, setCaptchaImage] = useState('');
   const [promptText, setPromptText] = useState('');
@@ -38,19 +36,15 @@ const Login = ({ onLoginSuccess }) => {
     }
   };
 
-  useEffect(() => {
-    fetchCaptcha();
-  }, []);
+  useEffect(() => { fetchCaptcha(); }, []);
 
   const handleCaptchaClick = useCallback((e) => {
     if (loading || clickPositions.length >= charCount) return;
     const img = captchaImgRef.current;
     if (!img) return;
     const rect = img.getBoundingClientRect();
-    const scaleX = img.naturalWidth / rect.width;
-    const scaleY = img.naturalHeight / rect.height;
-    const x = Math.round((e.clientX - rect.left) * scaleX);
-    const y = Math.round((e.clientY - rect.top) * scaleY);
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
     setClickPositions(prev => [...prev, { x, y }]);
   }, [loading, clickPositions.length, charCount]);
 
@@ -60,22 +54,17 @@ const Login = ({ onLoginSuccess }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     try {
       const captchaCode = authService.parseCaptchaText(promptText);
-
       const result = await authService.login(username, password, captchaKey, captchaCode);
-
       if (result.success) {
-        if (onLoginSuccess) {
-          onLoginSuccess(result.user);
-        }
+        if (onLoginSuccess) onLoginSuccess(result.user);
         navigate('/');
       } else {
-        setError(result.message || '登录失败，请检查用户名和密码');
+        setError(result.message || '登录失败');
       }
     } catch (err) {
-      setError(err.message || '登录失败，请检查用户名和密码');
+      setError(err.message || '登录失败');
       fetchCaptcha();
     } finally {
       setLoading(false);
@@ -85,147 +74,110 @@ const Login = ({ onLoginSuccess }) => {
   const clicksRemaining = charCount - clickPositions.length;
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-logo">
-            🛡️
-          </div>
+    <div className="login-page">
+      {/* 左侧品牌区 */}
+      <div className="login-page-left">
+        <Link to="/" className="login-page-home">← 首页</Link>
+        <div className="login-page-brand">
+          <h1>RBAC</h1>
+          <p>身份认证与权限管理系统</p>
+        </div>
+        <div className="login-page-info">
+          <span>Java 21</span>
+          <span>Spring Boot 4</span>
+          <span>PostgreSQL</span>
+          <span>Redis</span>
+        </div>
+      </div>
+
+      {/* 右侧表单区 */}
+      <div className="login-page-right">
+        <div className="login-page-form">
           <h2>欢迎回来</h2>
-          <p className="auth-subtitle">请登录您的账户以继续</p>
-        </div>
+          <p className="login-page-sub">请登录您的账户</p>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          {error && (
-            <div className="auth-error">
-              <span>⚠️</span> {error}
-            </div>
-          )}
+          <form onSubmit={handleSubmit}>
+            {error && <div className="login-page-error">{error}</div>}
 
-          <div className="input-group">
-            <span className="input-icon">👤</span>
-            <input
-              type="text"
-              placeholder="用户名"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              disabled={loading}
-              autoFocus
-            />
-          </div>
-
-          <div className="input-group">
-            <span className="input-icon">🔒</span>
-            <input
-              type="password"
-              placeholder="密码"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-
-          {/* Click-based Chinese character captcha */}
-          <div className="captcha-group">
-            {captchaLoading ? (
-              <div className="captcha-placeholder">加载验证码...</div>
-            ) : captchaImage ? (
-              <div className="captcha-click-area">
-                {promptText && (
-                  <div className="captcha-prompt">{promptText}</div>
-                )}
-                <div className="captcha-image-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
-                  <img
-                    ref={captchaImgRef}
-                    src={captchaImage}
-                    alt="验证码"
-                    className="captcha-image captcha-clickable"
-                    onClick={handleCaptchaClick}
-                    title={clicksRemaining > 0 ? `请点击 ${clicksRemaining} 个汉字` : '已选择全部汉字'}
-                    style={{ cursor: clicksRemaining > 0 && !loading ? 'crosshair' : 'default', width: 350, height: 180 }}
-                  />
-                  {clickPositions.map((pos, idx) => (
-                    <span
-                      key={idx}
-                      className="captcha-click-marker"
-                      style={{
-                        left: `${(pos.x / 350) * 100}%`,
-                        top: `${(pos.y / 180) * 100}%`,
-                      }}
-                    >
-                      {idx + 1}
-                    </span>
-                  ))}
-                </div>
-                <div className="captcha-actions">
-                  <span className="captcha-click-hint">
-                    {clicksRemaining > 0
-                      ? `请在图片中依次点击 ${clicksRemaining} 个汉字`
-                      : '已选择全部字符'}
-                  </span>
-                  {clickPositions.length > 0 && (
-                    <button type="button" className="captcha-clear-btn" onClick={clearClicks}>
-                      重选
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="captcha-refresh"
-                    onClick={fetchCaptcha}
-                    disabled={captchaLoading}
-                    title="刷新验证码"
-                  >
-                    🔄
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="captcha-placeholder">验证码加载失败</div>
-            )}
-          </div>
-
-          <div className="auth-options">
-            <label className="remember-me">
+            <div className="login-page-field">
+              <label>用户名</label>
               <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                type="text"
+                placeholder="admin"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                disabled={loading}
+                autoFocus
               />
-              <span>记住我</span>
-            </label>
-            <a href="/forgot-password" className="forgot-password" onClick={(e) => e.preventDefault()}>
-              忘记密码?
-            </a>
+            </div>
+
+            <div className="login-page-field">
+              <label>密码</label>
+              <input
+                type="password"
+                placeholder="········"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="login-page-field">
+              <label>安全验证</label>
+              {captchaLoading ? (
+                <div className="login-page-captcha-placeholder">加载中…</div>
+              ) : captchaImage ? (
+                <div className="login-page-captcha">
+                  {promptText && <span className="login-page-captcha-hint">{promptText}</span>}
+                  <div className="login-page-captcha-img">
+                    <img
+                      ref={captchaImgRef}
+                      src={captchaImage}
+                      alt="验证码"
+                      onClick={handleCaptchaClick}
+                      style={{
+                        cursor: clicksRemaining > 0 && !loading ? 'pointer' : 'default',
+                        width: 260, height: 134, display: 'block', borderRadius: 6,
+                      }}
+                    />
+                    {clickPositions.map((pos, idx) => (
+                      <span key={idx} className="login-page-dot"
+                        style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%` }}>
+                        {idx + 1}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="login-page-captcha-bar">
+                    <span>{clicksRemaining > 0 ? `依次点击 ${clicksRemaining} 个汉字` : '已就绪'}</span>
+                    {clickPositions.length > 0 && <button type="button" onClick={clearClicks}>重选</button>}
+                    <button type="button" onClick={fetchCaptcha} disabled={captchaLoading}>刷新</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="login-page-captcha-placeholder">
+                  加载失败 <button type="button" onClick={fetchCaptcha}>重试</button>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="login-page-btn"
+              disabled={loading || clickPositions.length !== charCount}
+            >
+              {loading ? '验证中…' : '登 录'}
+            </button>
+          </form>
+
+          <div className="login-page-bottom">
+            还没有账户？<Link to="/auth/register">立即注册</Link>
           </div>
 
-          <button
-            type="submit"
-            className="auth-btn"
-            disabled={loading || clickPositions.length !== charCount}
-          >
-            {loading ? (
-              <span className="btn-loading">
-                <span className="spinner"></span>
-                登录中...
-              </span>
-            ) : (
-              '登 录'
-            )}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <p>
-            还没有账户? <Link to="/auth/register">立即注册</Link>
-          </p>
-        </div>
-
-        <div className="auth-credentials-hint">
-          <p>演示账户:</p>
-          <p><code>admin</code> / <code>password</code> (管理员)</p>
-          <p><code>user</code> / <code>password</code> (普通用户)</p>
+          <div className="login-page-demo">
+            <code>admin</code> / <code>password</code>&emsp;<code>user</code> / <code>password</code>
+          </div>
         </div>
       </div>
     </div>

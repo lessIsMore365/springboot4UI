@@ -375,6 +375,12 @@
   font-size: 14px;
 }
 
+.jvm-gchistory-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 @media (max-width: 768px) {
   .jvm-grid {
     grid-template-columns: 1fr;
