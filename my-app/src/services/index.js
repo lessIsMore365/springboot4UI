@@ -10,3 +10,4 @@ export { default as paymentService } from './paymentService';
 export { default as reconciliationService } from './reconciliationService';
 export { default as java21Service } from './java21Service';
 export { default as monitorService } from './monitorService';
+export { default as logService } from './logService';

@@ -33,6 +33,98 @@ const ProgressBar = ({ label, used, max, formatFn = formatBytes }) => {
   );
 };
 
+const MemoryChart = ({ samples, intervalSeconds }) => {
+  if (!samples || samples.length < 2) return null;
+
+  const W = 800, H = 300, PAD = { top: 20, right: 20, bottom: 40, left: 70 };
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top - PAD.bottom;
+
+  const heapMaxVal = samples[0]?.heapMax || 1;
+  const yMax = heapMaxVal * 1.05;
+
+  const scaleX = (i) => PAD.left + (i / (samples.length - 1)) * plotW;
+  const scaleY = (v) => PAD.top + plotH - (v / yMax) * plotH;
+
+  const linePath = (key) => {
+    const points = samples.map((s, i) => `${i === 0 ? 'M' : 'L'}${scaleX(i).toFixed(1)},${scaleY(s[key] || 0).toFixed(1)}`).join(' ');
+    return points;
+  };
+
+  const areaPath = (key) => {
+    if (samples.length < 2) return '';
+    let d = `M${scaleX(0).toFixed(1)},${H - PAD.bottom}`;
+    samples.forEach((s, i) => {
+      d += ` L${scaleX(i).toFixed(1)},${scaleY(s[key] || 0).toFixed(1)}`;
+    });
+    d += ` L${scaleX(samples.length - 1).toFixed(1)},${H - PAD.bottom} Z`;
+    return d;
+  };
+
+  // Y-axis ticks
+  const yTicks = [];
+  const tickCount = 5;
+  for (let i = 0; i <= tickCount; i++) {
+    yTicks.push((yMax / tickCount) * i);
+  }
+
+  // X-axis time labels
+  const xLabels = [];
+  const labelCount = Math.min(6, samples.length);
+  for (let i = 0; i < labelCount; i++) {
+    const idx = Math.round((i / (labelCount - 1)) * (samples.length - 1));
+    const d = new Date(samples[idx]?.timestamp);
+    xLabels.push({ idx, label: d.toLocaleTimeString() });
+  }
+
+  return (
+    <div className="jvm-card" style={{ overflowX: 'auto' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: W, height: 'auto', minWidth: 500 }}>
+        {/* Grid */}
+        {yTicks.map((v, i) => (
+          <g key={i}>
+            <line x1={PAD.left} y1={scaleY(v)} x2={W - PAD.right} y2={scaleY(v)}
+              stroke="#e2e8f0" strokeWidth="1" strokeDasharray={i === 0 ? '' : '4,4'} />
+            <text x={PAD.left - 8} y={scaleY(v) + 4} textAnchor="end" fontSize="11" fill="#718096">
+              {formatBytes(v)}
+            </text>
+          </g>
+        ))}
+
+        {/* X-axis labels */}
+        {xLabels.map((x, i) => (
+          <text key={i} x={scaleX(x.idx)} y={H - 8} textAnchor="middle" fontSize="11" fill="#718096">
+            {x.label}
+          </text>
+        ))}
+
+        {/* Heap committed area */}
+        <path d={areaPath('heapCommitted')} fill="rgba(72,187,120,0.1)" />
+        <path d={linePath('heapCommitted')} fill="none" stroke="#48bb78" strokeWidth="1.5" strokeDasharray="6,3" />
+
+        {/* Heap used area */}
+        <path d={areaPath('heapUsed')} fill="rgba(66,153,225,0.15)" />
+        <path d={linePath('heapUsed')} fill="none" stroke="#4299e1" strokeWidth="2" />
+
+        {/* Heap max reference line */}
+        <line x1={PAD.left} y1={scaleY(heapMaxVal)} x2={W - PAD.right} y2={scaleY(heapMaxVal)}
+          stroke="#e53e3e" strokeWidth="1" strokeDasharray="4,4" />
+        <text x={W - PAD.right - 4} y={scaleY(heapMaxVal) - 6} textAnchor="end" fontSize="10" fill="#e53e3e">MAX</text>
+      </svg>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 12, fontSize: 13 }}>
+        <span><span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: '#4299e1', marginRight: 6, verticalAlign: 'middle' }} />堆已用</span>
+        <span><span style={{ display: 'inline-block', width: 12, height: 3, borderRadius: 1, background: '#48bb78', marginRight: 6, verticalAlign: 'middle' }} />堆已提交</span>
+        <span><span style={{ display: 'inline-block', width: 12, height: 1, borderTop: '2px dashed #e53e3e', marginRight: 6, verticalAlign: 'middle' }} />堆最大</span>
+      </div>
+      <div style={{ textAlign: 'center', fontSize: 12, color: '#a0aec0', marginTop: 8 }}>
+        采样间隔: {intervalSeconds}s | 样本数: {samples.length}
+      </div>
+    </div>
+  );
+};
+
 const JvmMonitor = () => {
   const [overview, setOverview] = useState(null);
   const [threads, setThreads] = useState(null);
@@ -42,6 +134,9 @@ const JvmMonitor = () => {
   const [error, setError] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [memoryHistory, setMemoryHistory] = useState(null);
+  const [memHistorySeconds, setMemHistorySeconds] = useState(300);
+  const [memHistoryLoading, setMemHistoryLoading] = useState(false);
 
   const fetchOverview = useCallback(async () => {
     try {
@@ -80,6 +175,20 @@ const JvmMonitor = () => {
       setError(err.message || '获取GC历史失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMemoryHistory = async (seconds) => {
+    setMemHistoryLoading(true);
+    setMemoryHistory(null);
+    try {
+      const result = await monitorService.getMemoryHistory(seconds || memHistorySeconds);
+      if (result.success) setMemoryHistory(result.data);
+      else setError(result.message || '获取内存历史失败');
+    } catch (err) {
+      setError(err.message || '获取内存历史失败');
+    } finally {
+      setMemHistoryLoading(false);
     }
   };
 
@@ -148,6 +257,7 @@ const JvmMonitor = () => {
           { key: 'memory', label: '内存' },
           { key: 'threads', label: '线程' },
           { key: 'gc', label: 'GC' },
+          { key: 'memoryChart', label: '内存曲线' },
           { key: 'gcHistory', label: 'GC 历史' },
           { key: 'threadDump', label: '线程转储' },
         ].map(tab => (
@@ -158,6 +268,7 @@ const JvmMonitor = () => {
               setActiveTab(tab.key);
               if (tab.key === 'threadDump' && !threadDump) fetchThreadDump();
               if (tab.key === 'gcHistory' && !gcHistory) fetchGcHistory();
+              if (tab.key === 'memoryChart' && !memoryHistory) fetchMemoryHistory();
             }}
           >
             {tab.label}
@@ -361,6 +472,62 @@ const JvmMonitor = () => {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'memoryChart' && (
+          <div className="jvm-memorychart-section">
+            <div className="jvm-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <h4 style={{ margin: 0 }}>堆内存历史趋势</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, color: '#718096' }}>时间范围:</span>
+                  <select className="toolbar-select" value={memHistorySeconds}
+                    onChange={(e) => { const v = Number(e.target.value); setMemHistorySeconds(v); fetchMemoryHistory(v); }}>
+                    <option value={60}>1 分钟</option>
+                    <option value={300}>5 分钟</option>
+                    <option value={600}>10 分钟</option>
+                    <option value={900}>15 分钟</option>
+                    <option value={1800}>30 分钟</option>
+                  </select>
+                  <button className="btn btn-test btn-sm" onClick={() => fetchMemoryHistory()} disabled={memHistoryLoading}>
+                    {memHistoryLoading ? '加载中...' : '刷新'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {memHistoryLoading && <div className="loading">加载内存历史数据...</div>}
+
+            {memoryHistory?.samples && memoryHistory.samples.length > 0 && (
+              <MemoryChart samples={memoryHistory.samples} intervalSeconds={memoryHistory.intervalSeconds || 5} />
+            )}
+
+            {memoryHistory?.samples && (
+              <div className="jvm-grid">
+                <div className="jvm-card">
+                  <h4>当前指标</h4>
+                  <div className="jvm-thread-stats">
+                    <div className="jvm-thread-stat">
+                      <span className="jvm-thread-num">{formatBytes(memoryHistory.samples[memoryHistory.samples.length - 1]?.heapUsed)}</span>
+                      <span className="jvm-thread-label">堆已用</span>
+                    </div>
+                    <div className="jvm-thread-stat">
+                      <span className="jvm-thread-num">{formatBytes(memoryHistory.samples[memoryHistory.samples.length - 1]?.heapCommitted)}</span>
+                      <span className="jvm-thread-label">堆已提交</span>
+                    </div>
+                    <div className="jvm-thread-stat virtual">
+                      <span className="jvm-thread-num">{memoryHistory.samples[memoryHistory.samples.length - 1]?.heapUsagePercent?.toFixed(1)}%</span>
+                      <span className="jvm-thread-label">使用率</span>
+                    </div>
+                    <div className="jvm-thread-stat">
+                      <span className="jvm-thread-num">{memoryHistory.sampleCount}</span>
+                      <span className="jvm-thread-label">采样点</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

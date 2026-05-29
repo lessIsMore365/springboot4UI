@@ -19,6 +19,7 @@ const menuCategories = [
     label: '业务功能',
     items: [
       { path: '/payment', icon: '💰', label: '支付管理' },
+      { path: '/payment?tab=notify', icon: '📋', label: '回调日志' },
       { path: '/reconciliation', icon: '📊', label: '对帐管理' },
     ],
   },
@@ -39,6 +40,7 @@ const menuCategories = [
       { path: '/jvm', icon: '📈', label: 'JVM 监控' },
       { path: '/db-monitor', icon: '🗄️', label: '数据库监控' },
       { path: '/server-monitor', icon: '🖥️', label: '服务器监控' },
+      { path: '/logs', icon: '📜', label: '日志管理' },
     ],
   },
 ];
@@ -57,7 +59,12 @@ const Sidebar = ({ isAuthenticated, currentUser, onLogout }) => {
     devtools: false,
   });
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    const [pathOnly, query] = path.split('?');
+    if (location.pathname !== pathOnly) return false;
+    if (query) return location.search === `?${query}`;
+    return !location.search || location.search === '';
+  };
 
   const toggleCategory = (key) => {
     if (collapsed) {

@@ -381,6 +381,21 @@
   gap: 0;
 }
 
+.jvm-memorychart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jvm-memorychart-section .toolbar-select {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #2d3748;
+  background: white;
+}
+
 @media (max-width: 768px) {
   .jvm-grid {
     grid-template-columns: 1fr;

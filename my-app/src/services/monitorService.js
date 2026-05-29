@@ -8,6 +8,7 @@ export const monitorService = {
   getThreadDump: () => api.get('/api/monitor/jvm/thread-dump'),
   getGc: () => api.get('/api/monitor/jvm/gc'),
   getGcHistory: () => api.get('/api/monitor/jvm/gc/history'),
+  getMemoryHistory: (seconds = 300) => api.get('/api/monitor/jvm/memory/history', { params: { seconds } }),
 
   // 数据库监控
   getDbOverview: () => api.get('/api/monitor/db/overview'),

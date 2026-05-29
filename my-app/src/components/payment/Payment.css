@@ -170,3 +170,170 @@
 .status.warning { background: #fefcbf; color: #744210; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
 .status.muted   { background: #e2e8f0; color: #4a5568; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
 .status.info    { background: #bee3f8; color: #2a4365; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+.status.error   { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+
+/* ======================== Tabs ======================== */
+
+.payment-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.payment-tab {
+  padding: 10px 24px;
+  border: none;
+  background: none;
+  color: #718096;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.payment-tab:hover {
+  color: #4a5568;
+}
+
+.payment-tab.active {
+  color: #4299e1;
+  border-bottom-color: #4299e1;
+}
+
+/* ======================== Notify Logs Toolbar ======================== */
+
+.notify-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.notify-toolbar .toolbar-spacer {
+  flex: 1;
+}
+
+.toolbar-select {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #2d3748;
+  background: white;
+}
+
+.toolbar-input-sm {
+  width: 80px;
+}
+
+/* ======================== Notify Logs Table ======================== */
+
+.cell-ellipsis {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ======================== Notify Cleanup ======================== */
+
+.notify-cleanup-result {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notify-cleanup-result.success {
+  background: #f0fff4;
+  color: #22543d;
+  border: 1px solid #c6f6d5;
+}
+
+.notify-cleanup-result.error {
+  background: #fff5f5;
+  color: #742a2a;
+  border: 1px solid #fed7d7;
+}
+
+.btn-close-sm {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: inherit;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+/* ======================== Notify Detail Modal ======================== */
+
+.modal-wide {
+  max-width: 800px;
+  width: 90%;
+}
+
+.notify-detail {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.detail-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+  color: #2d3748;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #4a5568;
+  width: 120px;
+  background: #f7fafc;
+}
+
+.notify-body-section {
+  margin-top: 16px;
+}
+
+.notify-body-section h4 {
+  margin: 0 0 8px 0;
+  color: #1a202c;
+  font-size: 15px;
+}
+
+.notify-body-pre {
+  background: #1a202c;
+  color: #e2e8f0;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 400px;
+  overflow-y: auto;
+}

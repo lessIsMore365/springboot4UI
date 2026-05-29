@@ -17,6 +17,7 @@ import Java21Demo from './components/java21/Java21Demo';
 import JvmMonitor from './components/jvm/JvmMonitor';
 import DbMonitor from './components/db/DbMonitor';
 import ServerMonitor from './components/server/ServerMonitor';
+import LogManagement from './components/log/LogManagement';
 import Sidebar from './components/sidebar/Sidebar';
 
 import './App.css';
@@ -98,6 +99,7 @@ const pageTitles = {
   '/jvm': 'JVM 监控',
   '/db-monitor': '数据库监控',
   '/server-monitor': '服务器监控',
+  '/logs': '日志管理',
   '/demo': '演示',
 };
 
@@ -204,6 +206,11 @@ const AppContent = () => {
       <Route path="/server-monitor" element={
         <PrivateRoute isAuthenticated={isAuthenticated}>
           <ServerMonitor />
+        </PrivateRoute>
+      } />
+      <Route path="/logs" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <LogManagement />
         </PrivateRoute>
       } />
       <Route path="*" element={<Navigate to="/" />} />
