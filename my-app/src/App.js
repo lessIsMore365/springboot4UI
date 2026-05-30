@@ -18,6 +18,10 @@ import JvmMonitor from './components/jvm/JvmMonitor';
 import DbMonitor from './components/db/DbMonitor';
 import ServerMonitor from './components/server/ServerMonitor';
 import LogManagement from './components/log/LogManagement';
+import OperlogManagement from './components/operlog/OperlogManagement';
+import OnlineUserManagement from './components/online/OnlineUserManagement';
+import DictManagement from './components/dict/DictManagement';
+import AiManagement from './components/ai/AiManagement';
 import Sidebar from './components/sidebar/Sidebar';
 
 import './App.css';
@@ -100,6 +104,10 @@ const pageTitles = {
   '/db-monitor': '数据库监控',
   '/server-monitor': '服务器监控',
   '/logs': '日志管理',
+  '/operlog': '操作日志',
+  '/online': '在线用户',
+  '/dict': '字典管理',
+  '/ai': 'AI 智能助手',
   '/demo': '演示',
 };
 
@@ -211,6 +219,26 @@ const AppContent = () => {
       <Route path="/logs" element={
         <PrivateRoute isAuthenticated={isAuthenticated}>
           <LogManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/operlog" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <OperlogManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/online" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <OnlineUserManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/dict" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <DictManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/ai" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <AiManagement />
         </PrivateRoute>
       } />
       <Route path="*" element={<Navigate to="/" />} />

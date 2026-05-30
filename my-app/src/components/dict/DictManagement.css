@@ -1,0 +1,34 @@
+.dict-container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+.dict-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.dict-header h2 { font-size: 24px; font-weight: 700; color: #1a202c; margin: 0; }
+
+.dict-cache-msg {
+  margin-bottom: 16px; padding: 10px 14px; border-radius: 6px; font-size: 14px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.dict-cache-msg.success { background: #f0fff4; color: #22543d; border: 1px solid #c6f6d5; }
+.dict-cache-msg.error { background: #fff5f5; color: #742a2a; border: 1px solid #fed7d7; }
+
+.dict-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+.dict-tab {
+  padding: 10px 20px; font-size: 14px; font-weight: 500; color: #718096;
+  background: none; border: none; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: color .2s, border-color .2s;
+}
+.dict-tab:hover { color: #2b6cb0; }
+.dict-tab.active { color: #2b6cb0; border-bottom-color: #2b6cb0; }
+
+.dict-data-toolbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px;
+}
+.dict-data-toolbar .toolbar-spacer { flex: 1; }
+
+.dict-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; }
+.dict-table { width: 100%; border-collapse: collapse; }
+.dict-table th { text-align: left; padding: 10px 14px; background: #f7fafc; color: #4a5568; font-size: 13px; font-weight: 600; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.dict-table td { padding: 10px 14px; font-size: 14px; color: #2d3748; border-bottom: 1px solid #f7fafc; }
+.dict-table tbody tr:hover { background: #f7fafc; }
+
+.dict-code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #553c9a; }

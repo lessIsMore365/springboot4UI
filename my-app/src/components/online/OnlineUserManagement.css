@@ -1,0 +1,24 @@
+.online-container { max-width: 1000px; margin: 0 auto; padding: 24px 20px; }
+.online-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.online-header h2 { font-size: 24px; font-weight: 700; color: #1a202c; margin: 0; }
+
+.online-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; }
+.online-table { width: 100%; border-collapse: collapse; }
+.online-table th { text-align: left; padding: 10px 14px; background: #f7fafc; color: #4a5568; font-size: 13px; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+.online-table td { padding: 10px 14px; font-size: 14px; color: #2d3748; border-bottom: 1px solid #f7fafc; }
+.online-table tbody tr:hover { background: #f7fafc; }
+
+.online-username { font-weight: 600; color: #2b6cb0; }
+.online-remaining { color: #38a169; font-weight: 500; }
+.online-remaining.expiring { color: #e53e3e; }
+
+.online-confirm { display: flex; align-items: center; white-space: nowrap; }
+
+.online-result {
+  margin-bottom: 16px; padding: 10px 14px; border-radius: 6px; font-size: 14px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.online-result.success { background: #f0fff4; color: #22543d; border: 1px solid #c6f6d5; }
+.online-result.error { background: #fff5f5; color: #742a2a; border: 1px solid #fed7d7; }
+
+.online-footer { margin-top: 16px; text-align: right; font-size: 14px; color: #718096; }

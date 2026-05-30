@@ -26,6 +26,15 @@ export const monitorService = {
   getServerMemory: () => api.get('/api/monitor/server/memory'),
   getServerDisk: () => api.get('/api/monitor/server/disk'),
   getServerNetwork: () => api.get('/api/monitor/server/network'),
+
+  // 操作日志
+  getOperlogs: (params = {}) => api.get('/api/monitor/operlog', { params }),
+  getOperlogDetail: (id) => api.get(`/api/monitor/operlog/${id}`),
+  deleteOperlogs: (beforeDays = 90) => api.delete('/api/monitor/operlog', { params: { beforeDays } }),
+
+  // 在线用户
+  getOnlineUsers: () => api.get('/api/monitor/online'),
+  forceOffline: (authorizationId) => api.delete(`/api/monitor/online/${authorizationId}`),
 };
 
 export default monitorService;

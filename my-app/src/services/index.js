@@ -11,3 +11,5 @@ export { default as reconciliationService } from './reconciliationService';
 export { default as java21Service } from './java21Service';
 export { default as monitorService } from './monitorService';
 export { default as logService } from './logService';
+export { default as dictService } from './dictService';
+export { default as aiService } from './aiService';

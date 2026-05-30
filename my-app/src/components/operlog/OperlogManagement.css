@@ -1,0 +1,37 @@
+.operlog-container { max-width: 1300px; margin: 0 auto; padding: 24px 20px; }
+.operlog-container h2 { font-size: 24px; font-weight: 700; color: #1a202c; margin: 0 0 16px 0; }
+
+.operlog-toolbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px;
+}
+.operlog-toolbar .toolbar-spacer { flex: 1; }
+
+.operlog-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; }
+.operlog-table { width: 100%; border-collapse: collapse; }
+.operlog-table th { text-align: left; padding: 10px 12px; background: #f7fafc; color: #4a5568; font-size: 13px; font-weight: 600; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.operlog-table td { padding: 8px 12px; font-size: 13px; color: #2d3748; border-bottom: 1px solid #f7fafc; }
+.operlog-table tbody tr:hover { background: #f7fafc; }
+
+.operlog-method { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; font-family: monospace; background: #edf2f7; color: #4a5568; }
+
+.operlog-btype { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.operlog-btype.insert { background: #c6f6d5; color: #22543d; }
+.operlog-btype.update { background: #bee3f8; color: #2a4365; }
+.operlog-btype.delete { background: #fed7d7; color: #742a2a; }
+.operlog-btype.grant { background: #e9d8fd; color: #44337a; }
+.operlog-btype.export { background: #fefcbf; color: #744210; }
+.operlog-btype.import { background: #c6f6d5; color: #234e52; }
+.operlog-btype.other { background: #e2e8f0; color: #4a5568; }
+
+.operlog-cleanup-result {
+  margin-bottom: 16px; padding: 10px 14px; border-radius: 6px; font-size: 14px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.operlog-cleanup-result.success { background: #f0fff4; color: #22543d; border: 1px solid #c6f6d5; }
+.operlog-cleanup-result.error { background: #fff5f5; color: #742a2a; border: 1px solid #fed7d7; }
+
+.operlog-detail { max-height: 70vh; overflow-y: auto; }
+.operlog-json-section { margin-top: 16px; }
+.operlog-json-section h4 { margin: 0 0 8px 0; color: #1a202c; font-size: 14px; }
+.operlog-json-pre { background: #1a202c; color: #e2e8f0; padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; }

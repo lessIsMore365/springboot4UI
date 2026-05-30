@@ -11,6 +11,7 @@ const menuCategories = [
       { path: '/users', icon: '👥', label: '用户管理' },
       { path: '/roles', icon: '👑', label: '角色管理' },
       { path: '/permissions', icon: '🔑', label: '权限管理' },
+      { path: '/dict', icon: '📖', label: '字典管理' },
     ],
   },
   {
@@ -41,6 +42,9 @@ const menuCategories = [
       { path: '/db-monitor', icon: '🗄️', label: '数据库监控' },
       { path: '/server-monitor', icon: '🖥️', label: '服务器监控' },
       { path: '/logs', icon: '📜', label: '日志管理' },
+      { path: '/operlog', icon: '📋', label: '操作日志' },
+      { path: '/online', icon: '🟢', label: '在线用户' },
+      { path: '/ai', icon: '🤖', label: 'AI 助手' },
     ],
   },
 ];
