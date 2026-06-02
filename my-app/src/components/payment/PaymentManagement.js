@@ -281,6 +281,7 @@ const PaymentManagement = () => {
       apiV3Key: '',
       mchSerialNo: c.mchSerialNo || '',
       privateKeyPath: c.privateKeyPath || '',
+      orderExpireMinutes: c.orderExpireMinutes ?? 15,
       enabled: c.enabled !== false,
     });
   };
@@ -295,6 +296,7 @@ const PaymentManagement = () => {
         appId: editForm.appId,
         gatewayUrl: editForm.gatewayUrl,
         notifyUrl: editForm.notifyUrl,
+        orderExpireMinutes: editForm.orderExpireMinutes,
         enabled: editForm.enabled,
       };
       if (isAlipay) {
@@ -703,6 +705,7 @@ const PaymentManagement = () => {
                         <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: 2 }}>
                           <span>回调: {c.notifyUrl || '-'}</span>
                           {isAlipay && <span> · 同步跳转: {c.returnUrl || '-'}</span>}
+                          <span> · 过期: {c.orderExpireMinutes ?? 15} 分钟</span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -788,6 +791,11 @@ const PaymentManagement = () => {
                               </div>
                             </>
                           )}
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>订单过期 (分钟)</label>
+                            <input type="number" min="1" value={editForm.orderExpireMinutes}
+                              onChange={e => setEditForm(p => ({ ...p, orderExpireMinutes: parseInt(e.target.value) || 15 }))} />
+                          </div>
                           <div className="form-group" style={{ margin: 0 }}>
                             <label>状态</label>
                             <select value={editForm.enabled}
