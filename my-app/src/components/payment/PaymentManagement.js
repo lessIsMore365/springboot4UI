@@ -23,7 +23,8 @@ const processStatusClass = (s) => {
 
 const PaymentManagement = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'notify' ? 'notify' : 'orders';
+  const tabFromParam = searchParams.get('tab');
+  const initialTab = tabFromParam === 'notify' ? 'notify' : tabFromParam === 'config' ? 'config' : 'orders';
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // ---- Orders tab state ----
@@ -62,6 +63,14 @@ const PaymentManagement = () => {
   const [notifyDetailLoading, setNotifyDetailLoading] = useState(false);
   const [cleanupDays, setCleanupDays] = useState(90);
   const [cleanupResult, setCleanupResult] = useState(null);
+
+  // ---- Config tab state ----
+  const [configs, setConfigs] = useState([]);
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configError, setConfigError] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
 
   // ======================== Orders functions ========================
 
@@ -246,6 +255,78 @@ const PaymentManagement = () => {
     }
   };
 
+  // ======================== Config functions ========================
+
+  const fetchConfigs = async () => {
+    setConfigLoading(true); setConfigError('');
+    try {
+      const r = await paymentService.getConfigs();
+      if (r.success !== false) setConfigs(r.data || []);
+      else setConfigError(r.message || '加载失败');
+    } catch (e) { setConfigError('加载失败'); }
+    finally { setConfigLoading(false); }
+  };
+
+  const startEdit = (c) => {
+    setEditing(c.paymentMethod);
+    setEditForm({
+      appId: c.appId || '',
+      gatewayUrl: c.gatewayUrl || '',
+      notifyUrl: c.notifyUrl || '',
+      signType: c.signType || 'RSA2',
+      privateKey: '',
+      alipayPublicKey: '',
+      returnUrl: c.returnUrl || '',
+      mchId: c.mchId || '',
+      apiV3Key: '',
+      mchSerialNo: c.mchSerialNo || '',
+      privateKeyPath: c.privateKeyPath || '',
+      enabled: c.enabled !== false,
+    });
+  };
+
+  const cancelEdit = () => { setEditing(null); setEditForm({}); };
+
+  const saveConfig = async (method) => {
+    setEditLoading(true);
+    try {
+      const isAlipay = method === 'ALIPAY';
+      const data = {
+        appId: editForm.appId,
+        gatewayUrl: editForm.gatewayUrl,
+        notifyUrl: editForm.notifyUrl,
+        enabled: editForm.enabled,
+      };
+      if (isAlipay) {
+        data.signType = editForm.signType;
+        if (editForm.privateKey) data.privateKey = editForm.privateKey;
+        if (editForm.alipayPublicKey) data.alipayPublicKey = editForm.alipayPublicKey;
+        data.returnUrl = editForm.returnUrl;
+      } else {
+        data.mchId = editForm.mchId;
+        if (editForm.apiV3Key) data.apiV3Key = editForm.apiV3Key;
+        data.mchSerialNo = editForm.mchSerialNo;
+        data.privateKeyPath = editForm.privateKeyPath;
+      }
+      const r = await paymentService.updateConfig(method, data);
+      if (r.success !== false) {
+        setEditing(null);
+        fetchConfigs();
+      } else {
+        setConfigError(r.message || '更新失败');
+      }
+    } catch (e) { setConfigError('更新失败: ' + (e.message || '')); }
+    finally { setEditLoading(false); }
+  };
+
+  const refreshConfig = async () => {
+    try {
+      const r = await paymentService.refreshConfig();
+      if (r.success !== false) fetchConfigs();
+      else setConfigError(r.message || '刷新失败');
+    } catch (e) { setConfigError('刷新失败'); }
+  };
+
   // ======================== Shared helpers ========================
 
   const statusLabel = (s) => {
@@ -274,6 +355,7 @@ const PaymentManagement = () => {
       <div className="payment-tabs">
         <button className={'payment-tab' + (activeTab === 'orders' ? ' active' : '')} onClick={() => { setActiveTab('orders'); setSearchParams({}); }}>订单管理</button>
         <button className={'payment-tab' + (activeTab === 'notify' ? ' active' : '')} onClick={() => { setActiveTab('notify'); setSearchParams({ tab: 'notify' }); }}>回调日志</button>
+        <button className={'payment-tab' + (activeTab === 'config' ? ' active' : '')} onClick={() => { setActiveTab('config'); setSearchParams({ tab: 'config' }); fetchConfigs(); }}>支付配置</button>
       </div>
 
       {/* ======================== Orders Tab ======================== */}
@@ -564,6 +646,167 @@ const PaymentManagement = () => {
                 )}
               </div>
             </div>
+          )}
+        </>
+      )}
+
+      {/* ======================== Config Tab ======================== */}
+      {activeTab === 'config' && (
+        <>
+          {configError && <div className="alert alert-error"><strong>错误:</strong> {configError}</div>}
+
+          <div className="notify-toolbar" style={{ justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+              修改后实时生效，无需重启。私钥等敏感字段脱敏显示。
+            </span>
+            <button className="btn btn-health" onClick={refreshConfig} title="从 DB 重新加载支付配置">
+              刷新配置
+            </button>
+          </div>
+
+          {configLoading ? (
+            <div className="loading">加载中...</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {configs.map(c => {
+                const isEditing = editing === c.paymentMethod;
+                const isAlipay = c.paymentMethod === 'ALIPAY';
+                return (
+                  <div key={c.paymentMethod} className="test-result" style={{ margin: 0, position: 'static' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {isAlipay ? '支付宝' : '微信支付'}
+                          <span className={`status ${c.enabled ? 'success' : 'muted'}`}>
+                            {c.enabled ? '已启用' : '已停用'}
+                          </span>
+                        </h4>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                          <span>AppId: {c.appId || '-'}</span>
+                          {isAlipay ? (
+                            <>
+                              <span>签名: {c.signType}</span>
+                              <span>网关: {c.gatewayUrl || '-'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>商户号: {c.mchId || '-'}</span>
+                              <span>证书序列号: {c.mchSerialNo || '-'}</span>
+                            </>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: 4 }}>
+                          <span>私钥: {c.privateKey ? c.privateKey.slice(0, 20) + '****' : '(未设置)'}</span>
+                          {isAlipay && <span> · 支付宝公钥: {c.alipayPublicKey ? c.alipayPublicKey.slice(0, 20) + '****' : '(未设置)'}</span>}
+                          {!isAlipay && <span> · 密钥路径: {c.privateKeyPath || '(未设置)'}</span>}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: 2 }}>
+                          <span>回调: {c.notifyUrl || '-'}</span>
+                          {isAlipay && <span> · 同步跳转: {c.returnUrl || '-'}</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {isEditing ? (
+                          <>
+                            <button className="btn btn-create btn-sm" onClick={() => saveConfig(c.paymentMethod)} disabled={editLoading}>保存</button>
+                            <button className="btn btn-cancel btn-sm" onClick={cancelEdit}>取消</button>
+                          </>
+                        ) : (
+                          <button className="btn btn-test btn-sm" onClick={() => startEdit(c)}>编辑</button>
+                        )}
+                      </div>
+                    </div>
+
+                    {isEditing && (
+                      <div style={{ marginTop: 16, padding: 16, background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>AppId</label>
+                            <input type="text" value={editForm.appId}
+                              onChange={e => setEditForm(p => ({ ...p, appId: e.target.value }))} />
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>网关地址</label>
+                            <input type="text" value={editForm.gatewayUrl}
+                              onChange={e => setEditForm(p => ({ ...p, gatewayUrl: e.target.value }))} />
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>回调地址</label>
+                            <input type="text" value={editForm.notifyUrl}
+                              onChange={e => setEditForm(p => ({ ...p, notifyUrl: e.target.value }))} />
+                          </div>
+                          {isAlipay ? (
+                            <>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label>签名方式</label>
+                                <select value={editForm.signType}
+                                  onChange={e => setEditForm(p => ({ ...p, signType: e.target.value }))}>
+                                  <option value="RSA2">RSA2</option>
+                                  <option value="RSA">RSA</option>
+                                </select>
+                              </div>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label>应用私钥</label>
+                                <input type="password" value={editForm.privateKey}
+                                  onChange={e => setEditForm(p => ({ ...p, privateKey: e.target.value }))}
+                                  placeholder="留空不修改" />
+                              </div>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label>支付宝公钥</label>
+                                <input type="password" value={editForm.alipayPublicKey}
+                                  onChange={e => setEditForm(p => ({ ...p, alipayPublicKey: e.target.value }))}
+                                  placeholder="留空不修改" />
+                              </div>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label>同步跳转</label>
+                                <input type="text" value={editForm.returnUrl}
+                                  onChange={e => setEditForm(p => ({ ...p, returnUrl: e.target.value }))} />
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label>商户号</label>
+                                <input type="text" value={editForm.mchId}
+                                  onChange={e => setEditForm(p => ({ ...p, mchId: e.target.value }))} />
+                              </div>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label>APIv3 密钥</label>
+                                <input type="password" value={editForm.apiV3Key}
+                                  onChange={e => setEditForm(p => ({ ...p, apiV3Key: e.target.value }))}
+                                  placeholder="留空不修改" />
+                              </div>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label>证书序列号</label>
+                                <input type="text" value={editForm.mchSerialNo}
+                                  onChange={e => setEditForm(p => ({ ...p, mchSerialNo: e.target.value }))} />
+                              </div>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label>私钥路径</label>
+                                <input type="text" value={editForm.privateKeyPath}
+                                  onChange={e => setEditForm(p => ({ ...p, privateKeyPath: e.target.value }))} />
+                              </div>
+                            </>
+                          )}
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>状态</label>
+                            <select value={editForm.enabled}
+                              onChange={e => setEditForm(p => ({ ...p, enabled: e.target.value === 'true' }))}>
+                              <option value="true">启用</option>
+                              <option value="false">停用</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!configLoading && configs.length === 0 && !configError && (
+            <div className="loading">暂无支付配置</div>
           )}
         </>
       )}

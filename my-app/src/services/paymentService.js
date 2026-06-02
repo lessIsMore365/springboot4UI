@@ -43,6 +43,12 @@ export const paymentService = {
   deleteNotifyLogs: (beforeDays = 90) => {
     return api.delete('/api/payment/notify-logs', { params: { beforeDays } });
   },
+
+  // ========== 支付配置管理 ==========
+  getConfigs: () => api.get('/api/payment/config'),
+  getConfig: (method) => api.get(`/api/payment/config/${method}`),
+  updateConfig: (method, data) => api.put(`/api/payment/config/${method}`, data),
+  refreshConfig: () => api.post('/api/payment/config/refresh'),
 };
 
 export default paymentService;
