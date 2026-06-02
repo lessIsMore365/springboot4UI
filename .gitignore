@@ -1,0 +1,5 @@
+# macOS
+.DS_Store
+
+# Symlink to external private repo (contains local paths and backend secrets)
+docs/CLAUDE.md
