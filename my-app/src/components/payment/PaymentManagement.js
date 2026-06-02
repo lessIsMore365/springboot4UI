@@ -860,8 +860,13 @@ const PaymentManagement = () => {
                   )}
                   {payResult.codeUrl && (
                     <div className="pay-qrcode">
-                      <p>微信扫码支付:</p>
-                      <code>{payResult.codeUrl}</code>
+                      <p>微信扫码支付</p>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payResult.codeUrl)}`}
+                        alt="微信支付二维码"
+                        style={{ display: 'block', margin: '0 auto', border: '1px solid #e2e8f0', borderRadius: 8 }}
+                      />
+                      <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 8, wordBreak: 'break-all' }}>{payResult.codeUrl}</p>
                     </div>
                   )}
                 </div>
