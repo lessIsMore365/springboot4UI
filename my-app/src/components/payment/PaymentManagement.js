@@ -129,6 +129,17 @@ const PaymentManagement = () => {
       if (result.success) {
         setFormSuccess('支付订单创建成功！');
         setPayResult(result.data);
+        // 缓存支付链接，以便列表点击支付时复用
+        const data = result.data;
+        if (data.orderNo && (data.codeUrl || data.payForm)) {
+          const cache = JSON.parse(localStorage.getItem('pay_cache') || '{}');
+          cache[data.orderNo] = {
+            codeUrl: data.codeUrl || null,
+            payForm: data.payForm || null,
+            paymentMethod: data.paymentMethod,
+          };
+          localStorage.setItem('pay_cache', JSON.stringify(cache));
+        }
         loadOrders(1);
       } else {
         setFormError(result.message || '创建失败');
@@ -195,9 +206,22 @@ const PaymentManagement = () => {
     setPayModalLoading(true);
     setPayModal(null);
     try {
+      // 优先从缓存读取支付链接（创建订单时保存）
+      const cache = JSON.parse(localStorage.getItem('pay_cache') || '{}');
+      const cached = cache[order.orderNo];
+      const codeUrl = (cached && cached.codeUrl) ? cached.codeUrl : null;
+      const payForm = (cached && cached.payForm) ? cached.payForm : null;
+
       const result = await paymentService.getOrder(order.orderNo);
       const data = result.success ? (result.data || result) : result;
-      setPayModal({ orderNo: order.orderNo, amount: order.amount, paymentMethod: order.paymentMethod, ...data });
+      setPayModal({
+        orderNo: order.orderNo,
+        amount: order.amount,
+        paymentMethod: order.paymentMethod,
+        ...data,
+        codeUrl: codeUrl || data.codeUrl || null,
+        payForm: payForm || data.payForm || null,
+      });
     } catch (err) {
       setPayModal({ orderNo: order.orderNo, amount: order.amount, paymentMethod: order.paymentMethod, error: err.message });
     } finally {
