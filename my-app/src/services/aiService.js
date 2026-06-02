@@ -49,6 +49,13 @@ export const aiService = {
   deleteUsage: (beforeDays = 90) =>
     api.delete('/api/monitor/ai-usage', { params: { beforeDays } }),
 
+  // ========== AI 配置管理 ==========
+  getConfigs: () => api.get('/api/ai/config'),
+  getConfig: (name) => api.get(`/api/ai/config/${name}`),
+  updateConfig: (name, data) => api.put(`/api/ai/config/${name}`, data),
+  refreshConfig: (name) => api.post(`/api/ai/config/${name}/refresh`),
+  refreshAllConfigs: () => api.post('/api/ai/config/refresh-all'),
+
   // ========== RAG 知识库 ==========
   // 知识库 CRUD
   createKb: (name, description) => api.post('/api/ai/rag/kb', { name, description }),

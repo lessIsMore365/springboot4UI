@@ -967,6 +967,200 @@ const RagTab = () => {
   );
 };
 
+// ========================= 8. AI 配置管理 =========================
+const ConfigTab = () => {
+  const [configs, setConfigs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
+
+  const fetchConfigs = async () => {
+    setLoading(true); setError('');
+    try {
+      const r = await aiService.getConfigs();
+      if (r.success !== false) setConfigs(r.data || []);
+      else setError(r.message || '加载失败');
+    } catch (e) { setError('加载失败'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchConfigs(); }, []);
+
+  const startEdit = (c) => {
+    setEditing(c.name);
+    setEditForm({
+      apiKey: '',
+      baseUrl: c.baseUrl || '',
+      model: c.model || '',
+      displayName: c.displayName || '',
+      maxTokens: c.maxTokens || 4096,
+      temperature: c.temperature ?? 0.7,
+      costPerMillionTokens: c.costPerMillionTokens ?? 1.0,
+      enabled: c.enabled !== false,
+      sortOrder: c.sortOrder || 1,
+    });
+  };
+
+  const cancelEdit = () => { setEditing(null); setEditForm({}); };
+
+  const saveConfig = async (name) => {
+    setEditLoading(true);
+    try {
+      const data = { ...editForm };
+      if (!data.apiKey) delete data.apiKey;
+      const r = await aiService.updateConfig(name, data);
+      if (r.success !== false) {
+        setEditing(null);
+        fetchConfigs();
+      } else {
+        setError(r.message || '更新失败');
+      }
+    } catch (e) { setError('更新失败: ' + (e.message || '')); }
+    finally { setEditLoading(false); }
+  };
+
+  const refreshConfig = async (name) => {
+    try {
+      const r = await aiService.refreshConfig(name);
+      if (r.success !== false) fetchConfigs();
+      else setError(r.message || '刷新失败');
+    } catch (e) { setError('刷新失败'); }
+  };
+
+  const refreshAll = async () => {
+    try {
+      const r = await aiService.refreshAllConfigs();
+      if (r.success !== false) fetchConfigs();
+      else setError(r.message || '刷新失败');
+    } catch (e) { setError('刷新失败'); }
+  };
+
+  const handleFormChange = (field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div>
+      <div className="ai-toolbar" style={{ justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+          修改后实时生效，无需重启。API Key 脱敏显示。
+        </span>
+        <button className="ai-btn outline sm" onClick={refreshAll} title="从 DB 重新加载全部配置">
+          刷新全部配置
+        </button>
+      </div>
+
+      <Status loading={loading} error={error} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {configs.map(c => {
+          const isEditing = editing === c.name;
+          return (
+            <div key={c.name} className="ai-card" style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <h4 style={{ margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {c.displayName || c.name}
+                    <span className={`ai-badge ${c.enabled ? 'success' : 'neutral'}`}>
+                      {c.enabled ? '已启用' : '已停用'}
+                    </span>
+                  </h4>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <span>名称: {c.name}</span>
+                    <span>模型: {c.model}</span>
+                    <span>Token: {c.maxTokens?.toLocaleString()}</span>
+                    <span>温度: {c.temperature}</span>
+                    <span>成本: ${(c.costPerMillionTokens || 0)}/M</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: 4 }}>
+                    <span>API: {c.apiKey || '(未设置)'}</span>
+                    {c.baseUrl && <span> · {c.baseUrl}</span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {isEditing ? (
+                    <>
+                      <button className="ai-btn sm" onClick={() => saveConfig(c.name)} disabled={editLoading}>保存</button>
+                      <button className="ai-btn sm outline" onClick={cancelEdit}>取消</button>
+                    </>
+                  ) : (
+                    <>
+                      <button className="ai-btn sm outline" onClick={() => startEdit(c)}>编辑</button>
+                      <button className="ai-btn sm outline" onClick={() => refreshConfig(c.name)}>刷新</button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {isEditing && (
+                <div style={{ marginTop: 16, padding: 16, background: '#f8fafc', borderRadius: 12, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                    <label className="ai-config-field">
+                      <span>API Key</span>
+                      <input className="ai-input" type="password" value={editForm.apiKey}
+                        onChange={e => handleFormChange('apiKey', e.target.value)}
+                        placeholder="留空不修改" />
+                    </label>
+                    <label className="ai-config-field">
+                      <span>Base URL</span>
+                      <input className="ai-input" value={editForm.baseUrl}
+                        onChange={e => handleFormChange('baseUrl', e.target.value)} />
+                    </label>
+                    <label className="ai-config-field">
+                      <span>模型</span>
+                      <input className="ai-input" value={editForm.model}
+                        onChange={e => handleFormChange('model', e.target.value)} />
+                    </label>
+                    <label className="ai-config-field">
+                      <span>显示名称</span>
+                      <input className="ai-input" value={editForm.displayName}
+                        onChange={e => handleFormChange('displayName', e.target.value)} />
+                    </label>
+                    <label className="ai-config-field">
+                      <span>Max Tokens</span>
+                      <input className="ai-input" type="number" value={editForm.maxTokens}
+                        onChange={e => handleFormChange('maxTokens', parseInt(e.target.value) || 0)} />
+                    </label>
+                    <label className="ai-config-field">
+                      <span>Temperature</span>
+                      <input className="ai-input" type="number" step="0.1" min="0" max="2" value={editForm.temperature}
+                        onChange={e => handleFormChange('temperature', parseFloat(e.target.value) || 0)} />
+                    </label>
+                    <label className="ai-config-field">
+                      <span>成本 ($/M token)</span>
+                      <input className="ai-input" type="number" step="0.01" min="0" value={editForm.costPerMillionTokens}
+                        onChange={e => handleFormChange('costPerMillionTokens', parseFloat(e.target.value) || 0)} />
+                    </label>
+                    <label className="ai-config-field">
+                      <span>排序</span>
+                      <input className="ai-input" type="number" value={editForm.sortOrder}
+                        onChange={e => handleFormChange('sortOrder', parseInt(e.target.value) || 1)} />
+                    </label>
+                    <label className="ai-config-field">
+                      <span>状态</span>
+                      <select className="ai-select" value={editForm.enabled}
+                        onChange={e => handleFormChange('enabled', e.target.value === 'true')}>
+                        <option value="true">启用</option>
+                        <option value="false">停用</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {configs.length === 0 && !loading && (
+        <EmptyState icon="⚙️" title="AI 配置管理" desc="管理各 AI 模型提供商的 API Key、模型、参数，修改后实时生效" />
+      )}
+    </div>
+  );
+};
+
 // ========================= 主组件 =========================
 const TAB_LIST = [
   { key: 'chat', icon: '💬', label: 'AI 对话' },
@@ -976,6 +1170,7 @@ const TAB_LIST = [
   { key: 'history', icon: '📝', label: '对话历史' },
   { key: 'usage', icon: '📈', label: '用量统计' },
   { key: 'rag', icon: '📚', label: '知识库' },
+  { key: 'config', icon: '⚙️', label: 'AI 配置' },
 ];
 
 const AiManagement = () => {
@@ -996,6 +1191,7 @@ const AiManagement = () => {
         {activeTab === 'history' && <HistoryTab />}
         {activeTab === 'usage' && <UsageTab />}
         {activeTab === 'rag' && <RagTab />}
+        {activeTab === 'config' && <ConfigTab />}
       </div>
     </div>
   );

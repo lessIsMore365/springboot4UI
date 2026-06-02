@@ -809,6 +809,21 @@
   border-top: 1px solid #f1f5f9;
 }
 
+/* ---- AI Config ---- */
+.ai-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+.ai-config-field .ai-input,
+.ai-config-field .ai-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   .ai-header { padding: 28px 20px 24px; border-radius: 0; }
