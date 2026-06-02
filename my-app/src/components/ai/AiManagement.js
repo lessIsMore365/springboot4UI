@@ -60,12 +60,13 @@ const ChatTab = () => {
     setError('');
 
     const userMsg = { role: 'user', content: text };
-    setMessages(prev => [...prev, userMsg]);
+    const history = [...messages, userMsg];
+    setMessages(history);
     setLoading(true);
 
     try {
       const body = {
-        messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+        messages: history.map(m => ({ role: m.role, content: m.content })),
         enableFunctions,
         provider,
       };
@@ -79,42 +80,87 @@ const ChatTab = () => {
         signal: controller.signal,
       });
 
+      if (!resp.ok) {
+        let errMsg = `HTTP ${resp.status}`;
+        try { const t = await resp.text(); errMsg += ': ' + (t?.slice(0, 200) || ''); } catch (e) {}
+        setError(errMsg);
+        setLoading(false);
+        return;
+      }
+
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       let aiContent = '';
+      let sseEvent = '';
+      let sseData = '';
 
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
+      const flushEvent = () => {
+        if (!sseData) { sseEvent = ''; return; }
+        try {
+          const parsed = JSON.parse(sseData);
+          const eventType = sseEvent || parsed.event || '';
+
+          if (eventType === 'delta' || (!eventType && parsed.content != null)) {
+            const c = parsed.content ?? parsed.delta ?? '';
+            aiContent += c;
+            setMessages(prev => {
+              const copy = [...prev];
+              const last = copy[copy.length - 1];
+              if (last && last.role === 'assistant') copy[copy.length - 1] = { ...last, content: aiContent };
+              return copy;
+            });
+          } else if (eventType === 'tool_call') {
+            setMessages(prev => [...prev, {
+              role: 'tool',
+              content: `函数调用: ${parsed.functionName || parsed.name || '?'}\n参数: ${JSON.stringify(parsed.arguments || parsed.args || {}, null, 2)}\n返回: ${JSON.stringify(parsed.result || parsed.response || {}, null, 2)}`
+            }]);
+          } else if (eventType === 'session_id') {
+            setSessionId(parsed.sessionId || parsed.session_id);
+          } else if (eventType === 'error') {
+            setMessages(prev => [...prev, { role: 'system', content: parsed.message || JSON.stringify(parsed) }]);
+          } else if (parsed.content && !eventType) {
+            // Content without explicit event
+            aiContent += parsed.content;
+            setMessages(prev => {
+              const copy = [...prev];
+              const last = copy[copy.length - 1];
+              if (last && last.role === 'assistant') copy[copy.length - 1] = { ...last, content: aiContent };
+              return copy;
+            });
+          }
+        } catch (e) {
+          // Not JSON — treat as raw text content
+          if (sseData) { aiContent += sseData; }
+          setMessages(prev => {
+            const copy = [...prev];
+            const last = copy[copy.length - 1];
+            if (last && last.role === 'assistant') copy[copy.length - 1] = { ...last, content: aiContent };
+            return copy;
+          });
+        }
+        sseEvent = '';
+        sseData = '';
+      };
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+        if (done) { flushEvent(); break; }
+        buffer += decoder.decode(value, { stream: false });
+        let idx;
+        while ((idx = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, idx).replace(/\r$/, '');
+          buffer = buffer.slice(idx + 1);
 
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            try {
-              const data = JSON.parse(line.slice(5).trim());
-              if (data.event === 'delta' && data.content) {
-                aiContent += data.content;
-                setMessages(prev => {
-                  const copy = [...prev];
-                  copy[copy.length - 1] = { ...copy[copy.length - 1], content: aiContent };
-                  return copy;
-                });
-              } else if (data.event === 'tool_call') {
-                setMessages(prev => [...prev, {
-                  role: 'tool',
-                  content: `函数调用: ${data.functionName}\n参数: ${JSON.stringify(data.arguments, null, 2)}\n返回: ${JSON.stringify(data.result, null, 2)}`
-                }]);
-              } else if (data.event === 'session_id') {
-                setSessionId(data.sessionId);
-              } else if (data.event === 'error') {
-                setMessages(prev => [...prev, { role: 'system', content: data.message }]);
-              }
-            } catch (e) { /* partial chunk */ }
+          if (line === '') {
+            flushEvent();
+          } else if (line.startsWith('event:')) {
+            sseEvent = line.slice(6).trim();
+          } else if (line.startsWith('data:')) {
+            const val = line.slice(5);
+            sseData += (sseData ? '\n' : '') + (val.startsWith(' ') ? val.slice(1) : val);
           }
         }
       }
@@ -122,7 +168,8 @@ const ChatTab = () => {
       if (!aiContent) {
         setMessages(prev => {
           const copy = [...prev];
-          copy[copy.length - 1] = { ...copy[copy.length - 1], content: '(收到空响应)' };
+          const last = copy[copy.length - 1];
+          if (last && last.role === 'assistant') copy[copy.length - 1] = { ...last, content: '(收到空响应)' };
           return copy;
         });
       }
