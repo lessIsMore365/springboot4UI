@@ -52,6 +52,10 @@ const PaymentManagement = () => {
   const [refundLoading, setRefundLoading] = useState(false);
   const [refundResult, setRefundResult] = useState(null);
 
+  // ---- Pay modal state ----
+  const [payModal, setPayModal] = useState(null);
+  const [payModalLoading, setPayModalLoading] = useState(false);
+
   // ---- Notify logs tab state ----
   const [notifyLogs, setNotifyLogs] = useState([]);
   const [notifyPagination, setNotifyPagination] = useState({ page: 1, size: 10, total: 0, pages: 0 });
@@ -184,6 +188,20 @@ const PaymentManagement = () => {
       setRefundResult({ success: false, message: err.message });
     } finally {
       setRefundLoading(false);
+    }
+  };
+
+  const handleShowPay = async (order) => {
+    setPayModalLoading(true);
+    setPayModal(null);
+    try {
+      const result = await paymentService.getOrder(order.orderNo);
+      const data = result.success ? (result.data || result) : result;
+      setPayModal({ orderNo: order.orderNo, amount: order.amount, paymentMethod: order.paymentMethod, ...data });
+    } catch (err) {
+      setPayModal({ orderNo: order.orderNo, amount: order.amount, paymentMethod: order.paymentMethod, error: err.message });
+    } finally {
+      setPayModalLoading(false);
     }
   };
 
@@ -415,6 +433,7 @@ const PaymentManagement = () => {
                       <th>状态</th>
                       <th>交易号</th>
                       <th>创建时间</th>
+                      <th>操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -433,10 +452,17 @@ const PaymentManagement = () => {
                           </td>
                           <td>{order.tradeNo || '-'}</td>
                           <td>{order.createTime ? new Date(order.createTime).toLocaleString() : '-'}</td>
+                          <td>
+                            {order.status === 'PENDING' && (
+                              <button className="btn btn-test btn-sm" onClick={() => handleShowPay(order)} disabled={payModalLoading}>
+                                支付
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))
                     ) : (
-                      <tr><td colSpan="8" className="no-data">暂无支付订单</td></tr>
+                      <tr><td colSpan="9" className="no-data">暂无支付订单</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -887,6 +913,54 @@ const PaymentManagement = () => {
                   disabled={formLoading}>取消</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Pay Modal - show QR code / pay form for pending order */}
+      {payModal && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setPayModal(null); }}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>订单支付</h3>
+              <button className="btn-close" onClick={() => setPayModal(null)}>×</button>
+            </div>
+            {payModalLoading ? (
+              <div className="loading">加载中...</div>
+            ) : payModal.error ? (
+              <div className="alert alert-error">获取订单信息失败: {payModal.error}</div>
+            ) : (
+              <>
+                <div className="pay-result-info" style={{ marginBottom: 16 }}>
+                  <span>订单号: <strong>{payModal.orderNo}</strong></span>
+                  <span>金额: <strong>¥{Number(payModal.amount).toFixed(2)}</strong></span>
+                  <span>方式: <strong>{payModal.paymentMethod === 'ALIPAY' ? '支付宝' : '微信支付'}</strong></span>
+                </div>
+                {payModal.payForm && (
+                  <div className="pay-form-html" dangerouslySetInnerHTML={{ __html: payModal.payForm }} />
+                )}
+                {payModal.codeUrl && (
+                  <div className="pay-qrcode" style={{ textAlign: 'center' }}>
+                    <p>微信扫码支付</p>
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payModal.codeUrl)}`}
+                      alt="微信支付二维码"
+                      style={{ display: 'block', margin: '0 auto', border: '1px solid #e2e8f0', borderRadius: 8 }}
+                    />
+                    <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 8, wordBreak: 'break-all' }}>{payModal.codeUrl}</p>
+                  </div>
+                )}
+                {!payModal.payForm && !payModal.codeUrl && (
+                  <div style={{ textAlign: 'center', padding: 20, color: '#94a3b8' }}>
+                    <p>暂无支付入口信息</p>
+                    <p style={{ fontSize: 13 }}>请重新创建订单获取支付二维码</p>
+                  </div>
+                )}
+              </>
+            )}
+            <div className="modal-actions">
+              <button type="button" className="btn btn-cancel" onClick={() => setPayModal(null)}>关闭</button>
+            </div>
           </div>
         </div>
       )}
