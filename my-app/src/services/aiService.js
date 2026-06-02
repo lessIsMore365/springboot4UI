@@ -56,6 +56,15 @@ export const aiService = {
   refreshConfig: (name) => api.post(`/api/ai/config/${name}/refresh`),
   refreshAllConfigs: () => api.post('/api/ai/config/refresh-all'),
 
+  // ========== MCP 服务 ==========
+  getMcpInfo: () => api.get('/.well-known/mcp'),
+  mcpCall: (method, params) => api.post('/api/mcp', {
+    jsonrpc: '2.0',
+    id: Date.now(),
+    method,
+    params: params || {},
+  }),
+
   // ========== RAG 知识库 ==========
   // 知识库 CRUD
   createKb: (name, description) => api.post('/api/ai/rag/kb', { name, description }),

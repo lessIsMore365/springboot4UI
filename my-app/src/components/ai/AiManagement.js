@@ -1014,7 +1014,171 @@ const RagTab = () => {
   );
 };
 
-// ========================= 8. AI 配置管理 =========================
+// ========================= 8. MCP 服务 =========================
+const McpTab = () => {
+  const [info, setInfo] = useState(null);
+  const [infoLoading, setInfoLoading] = useState(false);
+  const [tools, setTools] = useState([]);
+  const [toolsLoading, setToolsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedTool, setSelectedTool] = useState('');
+  const [toolArgs, setToolArgs] = useState('{}');
+  const [callResult, setCallResult] = useState(null);
+  const [callLoading, setCallLoading] = useState(false);
+  const [pingResult, setPingResult] = useState(null);
+
+  const fetchInfo = async () => {
+    setInfoLoading(true); setError('');
+    try {
+      const r = await aiService.getMcpInfo();
+      if (r.success !== false) setInfo(r.data || r);
+      else setError(r.message || '获取失败');
+    } catch (e) { setError('获取 MCP 信息失败: ' + (e.message || '')); }
+    finally { setInfoLoading(false); }
+  };
+
+  const listTools = async () => {
+    setToolsLoading(true); setError('');
+    try {
+      const r = await aiService.mcpCall('tools/list');
+      const data = r.data || r;
+      if (data?.result?.tools) setTools(data.result.tools);
+      else if (data?.tools) setTools(data.tools);
+      else setError('未获取到工具列表');
+    } catch (e) { setError('获取工具列表失败: ' + (e.message || '')); }
+    finally { setToolsLoading(false); }
+  };
+
+  const callTool = async () => {
+    setCallLoading(true); setCallResult(null);
+    try {
+      const args = JSON.parse(toolArgs);
+      const r = await aiService.mcpCall('tools/call', { name: selectedTool, arguments: args });
+      setCallResult(r.data || r);
+    } catch (e) {
+      setCallResult({ error: e.message });
+    }
+    finally { setCallLoading(false); }
+  };
+
+  const ping = async () => {
+    try {
+      const r = await aiService.mcpCall('ping');
+      setPingResult(r.data || r);
+    } catch (e) {
+      setPingResult({ error: e.message });
+    }
+  };
+
+  useEffect(() => { fetchInfo(); }, []);
+
+  const formatJson = (data) => {
+    try { return JSON.stringify(data, null, 2); } catch { return String(data); }
+  };
+
+  return (
+    <div>
+      <div className="ai-toolbar">
+        <button className="ai-btn sm" onClick={fetchInfo} disabled={infoLoading}>
+          {infoLoading ? '获取中...' : '获取服务信息'}
+        </button>
+        <button className="ai-btn sm outline" onClick={listTools} disabled={toolsLoading}>
+          {toolsLoading ? '获取中...' : '列出工具'}
+        </button>
+        <button className="ai-btn sm outline" onClick={ping}>Ping</button>
+      </div>
+
+      <Status loading={infoLoading || toolsLoading} error={error} />
+
+      {info && (
+        <div className="ai-stats-row" style={{ marginBottom: 16 }}>
+          <div className="ai-stat-card">
+            <div className="ai-stat-icon blue">🔌</div>
+            <div><div className="ai-stat-label">协议</div><div className="ai-stat-value" style={{ fontSize: '16px' }}>{info.protocol || info.name}</div></div>
+          </div>
+          <div className="ai-stat-card">
+            <div className="ai-stat-icon green">📌</div>
+            <div><div className="ai-stat-label">版本</div><div className="ai-stat-value" style={{ fontSize: '16px' }}>{info.version}</div></div>
+          </div>
+          <div className="ai-stat-card">
+            <div className="ai-stat-icon purple">🌐</div>
+            <div><div className="ai-stat-label">端点</div><div className="ai-stat-value" style={{ fontSize: '14px', wordBreak: 'break-all' }}>{info.endpoint}</div></div>
+          </div>
+        </div>
+      )}
+
+      {info?.description && (
+        <div className="ai-card" style={{ marginBottom: 16 }}>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>{info.description}</p>
+        </div>
+      )}
+
+      {pingResult && (
+        <div className="ai-card" style={{ marginBottom: 16 }}>
+          <h4 style={{ margin: '0 0 8px' }}>Ping 结果</h4>
+          <pre className="ai-sql">{formatJson(pingResult)}</pre>
+        </div>
+      )}
+
+      {tools.length > 0 && (
+        <div className="ai-card" style={{ marginBottom: 16 }}>
+          <h4>可用工具 ({tools.length})</h4>
+          <div className="ai-table-wrap">
+            <table className="ai-table">
+              <thead>
+                <tr>
+                  <th>工具名</th>
+                  <th>描述</th>
+                  <th>参数 Schema</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tools.map(t => (
+                  <tr key={t.name}>
+                    <td style={{ fontWeight: 600, color: '#4f46e5' }}>{t.name}</td>
+                    <td style={{ fontSize: '13px' }}>{t.description || '-'}</td>
+                    <td className="ai-mono" style={{ fontSize: '11px', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.inputSchema?.properties ? Object.keys(t.inputSchema.properties).join(', ') : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div className="ai-card">
+        <h4>调用工具</h4>
+        <div className="ai-toolbar" style={{ flexWrap: 'wrap' }}>
+          <select className="ai-select" value={selectedTool} onChange={e => setSelectedTool(e.target.value)}
+            style={{ minWidth: 200 }}>
+            <option value="">选择工具...</option>
+            {tools.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+          </select>
+          <span style={{ fontSize: '12px', color: '#94a3b8' }}>参数 (JSON):</span>
+          <input className="ai-input" style={{ flex: 1, minWidth: 200, fontFamily: 'monospace', fontSize: '13px' }}
+            value={toolArgs} onChange={e => setToolArgs(e.target.value)} placeholder='{"key": "value"}' />
+          <button className="ai-btn sm" onClick={callTool} disabled={callLoading || !selectedTool}>
+            {callLoading ? '调用中...' : '执行'}
+          </button>
+        </div>
+
+        {callResult && (
+          <div style={{ marginTop: 12 }}>
+            <pre className="ai-sql" style={{ maxHeight: 400, overflow: 'auto' }}>{formatJson(callResult)}</pre>
+          </div>
+        )}
+      </div>
+
+      {!info && !infoLoading && !error && (
+        <EmptyState icon="🔌" title="MCP 服务" desc="Model Context Protocol — 通过 JSON-RPC 暴露业务函数，供外部 AI Agent 调用" />
+      )}
+    </div>
+  );
+};
+
+// ========================= 9. AI 配置管理 =========================
 const ConfigTab = () => {
   const [configs, setConfigs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1217,6 +1381,7 @@ const TAB_LIST = [
   { key: 'history', icon: '📝', label: '对话历史' },
   { key: 'usage', icon: '📈', label: '用量统计' },
   { key: 'rag', icon: '📚', label: '知识库' },
+  { key: 'mcp', icon: '🔌', label: 'MCP 服务' },
   { key: 'config', icon: '⚙️', label: 'AI 配置' },
 ];
 
@@ -1238,6 +1403,7 @@ const AiManagement = () => {
         {activeTab === 'history' && <HistoryTab />}
         {activeTab === 'usage' && <UsageTab />}
         {activeTab === 'rag' && <RagTab />}
+        {activeTab === 'mcp' && <McpTab />}
         {activeTab === 'config' && <ConfigTab />}
       </div>
     </div>
