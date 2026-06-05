@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import * as echarts from 'echarts';
 import { paymentService } from '../../services';
 import './Payment.css';
 
-const INITIAL_FORM = { subject: '', body: '', amount: '', paymentMethod: 'ALIPAY' };
+const INITIAL_FORM = { subject: '', body: '', amount: '', paymentMethod: 'ALIPAY', tradeType: 'PAGE', bizType: '' };
 
 const processStatusLabel = (s) => {
   const map = {
@@ -24,8 +25,13 @@ const processStatusClass = (s) => {
 const PaymentManagement = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromParam = searchParams.get('tab');
-  const initialTab = tabFromParam === 'notify' ? 'notify' : tabFromParam === 'config' ? 'config' : 'orders';
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const resolveTab = (p) => p === 'notify' ? 'notify' : p === 'config' ? 'config' : p === 'stats' ? 'stats' : 'orders';
+  const [activeTab, setActiveTab] = useState(() => resolveTab(tabFromParam));
+
+  // URL param changes → sync activeTab
+  useEffect(() => {
+    setActiveTab(resolveTab(tabFromParam));
+  }, [tabFromParam]);
 
   // ---- Orders tab state ----
   const [orders, setOrders] = useState([]);
@@ -75,6 +81,26 @@ const PaymentManagement = () => {
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
+
+  // ---- Stats tab state ----
+  const [statsDateStart, setStatsDateStart] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 30);
+    return d.toISOString().slice(0, 10);
+  });
+  const [statsDateEnd, setStatsDateEnd] = useState(() => new Date().toISOString().slice(0, 10));
+  const [statsMethod, setStatsMethod] = useState('');
+  const [statsOverview, setStatsOverview] = useState(null);
+  const [statsTrend, setStatsTrend] = useState(null);
+  const [statsByMethod, setStatsByMethod] = useState(null);
+  const [statsByBizType, setStatsByBizType] = useState(null);
+  const [statsByStatus, setStatsByStatus] = useState(null);
+  const [statsRecent, setStatsRecent] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
+  const trendChartRef = useRef(null);
+  const methodChartRef = useRef(null);
+  const statusChartRef = useRef(null);
+  const bizTypeChartRef = useRef(null);
 
   // ======================== Orders functions ========================
 
@@ -369,7 +395,147 @@ const PaymentManagement = () => {
     } catch (e) { setConfigError('刷新失败'); }
   };
 
+  useEffect(() => {
+    if (activeTab === 'config') fetchConfigs();
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ======================== Stats functions ========================
+
+  const statsParams = useCallback(() => {
+    const p = { startDate: statsDateStart, endDate: statsDateEnd };
+    if (statsMethod) p.paymentMethod = statsMethod;
+    return p;
+  }, [statsDateStart, statsDateEnd, statsMethod]);
+
+  const loadStats = useCallback(async () => {
+    setStatsLoading(true);
+    setStatsError('');
+    const params = statsParams();
+    try {
+      const [overview, trend, byMethod, byBizType, byStatus, recent] = await Promise.all([
+        paymentService.getStatsOverview(params),
+        paymentService.getStatsTrend(params),
+        paymentService.getStatsByMethod({ startDate: params.startDate, endDate: params.endDate }),
+        paymentService.getStatsByBizType(params),
+        paymentService.getStatsByStatus(params),
+        paymentService.getStatsRecent(),
+      ]);
+      setStatsOverview(overview.success !== false ? overview.data : null);
+      setStatsTrend(trend.success !== false ? trend.data : null);
+      setStatsByMethod(byMethod.success !== false ? byMethod.data : null);
+      setStatsByBizType(byBizType.success !== false ? byBizType.data : null);
+      setStatsByStatus(byStatus.success !== false ? byStatus.data : null);
+      setStatsRecent(recent.success !== false ? recent.data : null);
+    } catch (e) {
+      setStatsError('加载统计数据失败: ' + (e.message || ''));
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [statsParams]);
+
+  useEffect(() => {
+    if (activeTab === 'stats') loadStats();
+  }, [activeTab, loadStats]);
+
+  // ECharts rendering
+  useEffect(() => {
+    if (activeTab !== 'stats' || !statsTrend) return;
+
+    // Trend chart
+    if (trendChartRef.current) {
+      const chart = echarts.init(trendChartRef.current);
+      const dates = (statsTrend || []).map(d => d.date);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['成功金额', '订单数'], top: 0 },
+        grid: { left: 60, right: 60, top: 40, bottom: 40 },
+        xAxis: { type: 'category', data: dates, axisLabel: { rotate: 45, fontSize: 11 } },
+        yAxis: [
+          { type: 'value', name: '金额 (¥)', axisLabel: { formatter: v => '¥' + v } },
+          { type: 'value', name: '订单数' },
+        ],
+        series: [
+          { name: '成功金额', type: 'bar', data: (statsTrend || []).map(d => d.successamount || 0), itemStyle: { color: '#48bb78' } },
+          { name: '订单数', type: 'line', yAxisIndex: 1, data: (statsTrend || []).map(d => d.ordercount || 0), itemStyle: { color: '#4299e1' } },
+        ],
+      });
+      const handleResize = () => chart.resize();
+      window.addEventListener('resize', handleResize);
+      return () => { window.removeEventListener('resize', handleResize); chart.dispose(); };
+    }
+  }, [activeTab, statsTrend]);
+
+  useEffect(() => {
+    if (activeTab !== 'stats' || !statsByMethod) return;
+    if (methodChartRef.current) {
+      const chart = echarts.init(methodChartRef.current);
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+        series: [{
+          type: 'pie', radius: ['40%', '70%'],
+          data: (statsByMethod || []).map(d => ({ name: d.paymentmethod === 'ALIPAY' ? '支付宝' : '微信支付', value: d.totalamount || 0 })),
+          label: { formatter: '{b}\n¥{c}' },
+          itemStyle: { borderRadius: 4 },
+        }],
+      });
+      const handleResize = () => chart.resize();
+      window.addEventListener('resize', handleResize);
+      return () => { window.removeEventListener('resize', handleResize); chart.dispose(); };
+    }
+  }, [activeTab, statsByMethod]);
+
+  useEffect(() => {
+    if (activeTab !== 'stats' || !statsByStatus) return;
+    if (statusChartRef.current) {
+      const chart = echarts.init(statusChartRef.current);
+      const colorMap = { PENDING: '#ecc94b', SUCCESS: '#48bb78', CLOSED: '#a0aec0', REFUND: '#4299e1' };
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c} 笔 ({d}%)' },
+        series: [{
+          type: 'pie', radius: ['40%', '70%'],
+          data: (statsByStatus || []).map(d => ({
+            name: statusLabel(d.status), value: d.count || 0,
+            itemStyle: { color: colorMap[d.status] || '#a0aec0' },
+          })),
+          label: { formatter: '{b}\n{c} 笔' },
+        }],
+      });
+      const handleResize = () => chart.resize();
+      window.addEventListener('resize', handleResize);
+      return () => { window.removeEventListener('resize', handleResize); chart.dispose(); };
+    }
+  }, [activeTab, statsByStatus]); // eslint-disable-line
+
+  useEffect(() => {
+    if (activeTab !== 'stats' || !statsByBizType) return;
+    if (bizTypeChartRef.current) {
+      const chart = echarts.init(bizTypeChartRef.current);
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+        series: [{
+          type: 'pie', radius: ['40%', '70%'],
+          data: (statsByBizType || []).map(d => ({ name: d.biztype || '未分类', value: d.totalamount || 0 })),
+          label: { formatter: '{b}\n¥{c}' },
+        }],
+      });
+      const handleResize = () => chart.resize();
+      window.addEventListener('resize', handleResize);
+      return () => { window.removeEventListener('resize', handleResize); chart.dispose(); };
+    }
+  }, [activeTab, statsByBizType]);
+
+  const openChartPage = () => {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token') || '';
+    if (!token) { setStatsError('请先登录获取 token'); return; }
+    window.open(paymentService.getStatsChartUrl(token), '_blank');
+  };
+
   // ======================== Shared helpers ========================
+
+  const tradeTypeLabel = (t) => {
+    const map = { PAGE: 'PC网页', WAP: '移动H5', APP: '原生App', JSAPI: '小程序/公众号' };
+    return map[t] || t || '-';
+  };
 
   const statusLabel = (s) => {
     const map = { PENDING: '待支付', SUCCESS: '已支付', CLOSED: '已关闭', REFUND: '已退款' };
@@ -398,6 +564,7 @@ const PaymentManagement = () => {
         <button className={'payment-tab' + (activeTab === 'orders' ? ' active' : '')} onClick={() => { setActiveTab('orders'); setSearchParams({}); }}>订单管理</button>
         <button className={'payment-tab' + (activeTab === 'notify' ? ' active' : '')} onClick={() => { setActiveTab('notify'); setSearchParams({ tab: 'notify' }); }}>回调日志</button>
         <button className={'payment-tab' + (activeTab === 'config' ? ' active' : '')} onClick={() => { setActiveTab('config'); setSearchParams({ tab: 'config' }); fetchConfigs(); }}>支付配置</button>
+        <button className={'payment-tab' + (activeTab === 'stats' ? ' active' : '')} onClick={() => { setActiveTab('stats'); setSearchParams({ tab: 'stats' }); }}>支付统计</button>
       </div>
 
       {/* ======================== Orders Tab ======================== */}
@@ -452,6 +619,8 @@ const PaymentManagement = () => {
                       <th>支付方式</th>
                       <th>金额</th>
                       <th>商品</th>
+                      <th>来源</th>
+                      <th>业务类型</th>
                       <th>状态</th>
                       <th>交易号</th>
                       <th>创建时间</th>
@@ -467,6 +636,8 @@ const PaymentManagement = () => {
                           <td>{order.paymentMethod}</td>
                           <td>¥{order.amount != null ? Number(order.amount).toFixed(2) : '-'}</td>
                           <td>{order.subject || '-'}</td>
+                          <td>{tradeTypeLabel(order.tradeType)}</td>
+                          <td>{order.bizType || '-'}</td>
                           <td>
                             <span className={`status ${statusClass(order.status)}`}>
                               {statusLabel(order.status)}
@@ -484,7 +655,7 @@ const PaymentManagement = () => {
                         </tr>
                       ))
                     ) : (
-                      <tr><td colSpan="9" className="no-data">暂无支付订单</td></tr>
+                      <tr><td colSpan="11" className="no-data">暂无支付订单</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -867,6 +1038,131 @@ const PaymentManagement = () => {
         </>
       )}
 
+      {/* ======================== Stats Tab ======================== */}
+      {activeTab === 'stats' && (
+        <>
+          {statsError && <div className="alert alert-error"><strong>错误:</strong> {statsError}</div>}
+
+          {/* Filters */}
+          <div className="notify-toolbar" style={{ justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, color: '#4a5568', fontWeight: 500 }}>日期范围:</span>
+              <input type="date" className="toolbar-input" value={statsDateStart}
+                onChange={(e) => setStatsDateStart(e.target.value)} style={{ width: 140 }} />
+              <span style={{ color: '#94a3b8' }}>~</span>
+              <input type="date" className="toolbar-input" value={statsDateEnd}
+                onChange={(e) => setStatsDateEnd(e.target.value)} style={{ width: 140 }} />
+              <span style={{ fontSize: 13, color: '#4a5568', fontWeight: 500, marginLeft: 8 }}>支付方式:</span>
+              <select className="toolbar-select" value={statsMethod}
+                onChange={(e) => setStatsMethod(e.target.value)}>
+                <option value="">全部</option>
+                <option value="ALIPAY">支付宝</option>
+                <option value="WECHAT">微信支付</option>
+              </select>
+              <button className="btn btn-test" onClick={loadStats} disabled={statsLoading}>
+                {statsLoading ? '查询中...' : '查询'}
+              </button>
+            </div>
+            <button className="btn btn-health" onClick={openChartPage}>图表页面</button>
+          </div>
+
+          {statsLoading ? (
+            <div className="loading">统计数据加载中...</div>
+          ) : (
+            <>
+              {/* Overview Cards */}
+              {statsOverview && (
+                <div className="stats-cards">
+                  <div className="stats-card">
+                    <div className="stats-card-num">{statsOverview.totalorders ?? 0}</div>
+                    <div className="stats-card-label">总订单数</div>
+                  </div>
+                  <div className="stats-card">
+                    <div className="stats-card-num">¥{(statsOverview.totalamount ?? 0).toFixed(2)}</div>
+                    <div className="stats-card-label">总金额</div>
+                  </div>
+                  <div className="stats-card success">
+                    <div className="stats-card-num">{statsOverview.successcount ?? 0}</div>
+                    <div className="stats-card-label">成功</div>
+                    <div className="stats-card-sub">¥{(statsOverview.successamount ?? 0).toFixed(2)}</div>
+                  </div>
+                  <div className="stats-card warning">
+                    <div className="stats-card-num">{statsOverview.pendingcount ?? 0}</div>
+                    <div className="stats-card-label">待支付</div>
+                  </div>
+                  <div className="stats-card muted">
+                    <div className="stats-card-num">{statsOverview.closedcount ?? 0}</div>
+                    <div className="stats-card-label">已关闭</div>
+                  </div>
+                  <div className="stats-card info">
+                    <div className="stats-card-num">{statsOverview.refundcount ?? 0}</div>
+                    <div className="stats-card-label">退款</div>
+                    <div className="stats-card-sub">¥{(statsOverview.refundamount ?? 0).toFixed(2)}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Charts Row */}
+              <div className="stats-charts-row">
+                <div className="stats-chart-card">
+                  <h4>收入趋势</h4>
+                  <div ref={trendChartRef} style={{ width: '100%', height: 300 }}></div>
+                </div>
+              </div>
+              <div className="stats-charts-row" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                <div className="stats-chart-card">
+                  <h4>支付方式分布</h4>
+                  <div ref={methodChartRef} style={{ width: '100%', height: 260 }}></div>
+                </div>
+                <div className="stats-chart-card">
+                  <h4>订单状态分布</h4>
+                  <div ref={statusChartRef} style={{ width: '100%', height: 260 }}></div>
+                </div>
+                <div className="stats-chart-card">
+                  <h4>业务分类分布</h4>
+                  <div ref={bizTypeChartRef} style={{ width: '100%', height: 260 }}></div>
+                </div>
+              </div>
+
+              {/* Recent Orders */}
+              {statsRecent && (
+                <div className="stats-chart-card" style={{ marginTop: 16 }}>
+                  <h4>最近订单</h4>
+                  <div className="payment-table-container">
+                    <table className="payment-table">
+                      <thead>
+                        <tr>
+                          <th>订单号</th>
+                          <th>支付方式</th>
+                          <th>金额</th>
+                          <th>商品</th>
+                          <th>状态</th>
+                          <th>时间</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {statsRecent.length > 0 ? statsRecent.map(o => (
+                          <tr key={o.orderNo}>
+                            <td>{o.orderNo}</td>
+                            <td>{o.paymentMethod}</td>
+                            <td>¥{Number(o.amount).toFixed(2)}</td>
+                            <td>{o.subject || '-'}</td>
+                            <td><span className={`status ${statusClass(o.status)}`}>{statusLabel(o.status)}</span></td>
+                            <td>{o.createTime ? new Date(o.createTime).toLocaleString() : '-'}</td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan="6" className="no-data">暂无数据</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
       {/* Create Payment Modal - works regardless of active tab */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false); }}>
@@ -896,6 +1192,21 @@ const PaymentManagement = () => {
                     <option value="ALIPAY">支付宝</option>
                     <option value="WECHAT">微信支付</option>
                   </select>
+                </div>
+                <div className="form-group">
+                  <label>终端来源</label>
+                  <select name="tradeType" value={formData.tradeType}
+                    onChange={handleFormChange} disabled={formLoading}>
+                    <option value="PAGE">PC网页</option>
+                    <option value="WAP">移动H5</option>
+                    <option value="APP">原生App</option>
+                    <option value="JSAPI">小程序/公众号</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>业务类型</label>
+                  <input type="text" name="bizType" value={formData.bizType}
+                    onChange={handleFormChange} placeholder="如: RECHARGE/ORDER/VIP" disabled={formLoading} />
                 </div>
                 <div className="form-group form-group-full">
                   <label>商品描述</label>

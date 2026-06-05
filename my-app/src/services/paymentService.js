@@ -49,6 +49,15 @@ export const paymentService = {
   getConfig: (method) => api.get(`/api/payment/config/${method}`),
   updateConfig: (method, data) => api.put(`/api/payment/config/${method}`, data),
   refreshConfig: () => api.post('/api/payment/config/refresh'),
+
+  // ========== 支付统计 ==========
+  getStatsOverview: (params = {}) => api.get('/api/payment/stats/overview', { params }),
+  getStatsTrend: (params = {}) => api.get('/api/payment/stats/trend', { params }),
+  getStatsByMethod: (params = {}) => api.get('/api/payment/stats/by-method', { params }),
+  getStatsByBizType: (params = {}) => api.get('/api/payment/stats/by-biz-type', { params }),
+  getStatsByStatus: (params = {}) => api.get('/api/payment/stats/by-status', { params }),
+  getStatsRecent: () => api.get('/api/payment/stats/recent'),
+  getStatsChartUrl: (token) => `${api.defaults.baseURL || ''}/api/payment/stats/chart?token=${encodeURIComponent(token)}`,
 };
 
 export default paymentService;

@@ -21,7 +21,9 @@ const menuCategories = [
     items: [
       { path: '/payment', icon: '💰', label: '支付管理' },
       { path: '/payment?tab=notify', icon: '📋', label: '回调日志' },
-      { path: '/reconciliation', icon: '📊', label: '对帐管理' },
+      { path: '/payment?tab=config', icon: '⚙️', label: '支付配置' },
+      { path: '/payment?tab=stats', icon: '📊', label: '支付统计' },
+      { path: '/reconciliation', icon: '📈', label: '对帐管理' },
     ],
   },
   {
