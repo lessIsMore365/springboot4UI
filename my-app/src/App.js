@@ -22,6 +22,7 @@ import LogManagement from './components/log/LogManagement';
 import OperlogManagement from './components/operlog/OperlogManagement';
 import OnlineUserManagement from './components/online/OnlineUserManagement';
 import DictManagement from './components/dict/DictManagement';
+import MenuManagement from './components/menu/MenuManagement';
 import AiManagement from './components/ai/AiManagement';
 import Sidebar from './components/sidebar/Sidebar';
 
@@ -108,6 +109,7 @@ const pageTitles = {
   '/operlog': '操作日志',
   '/online': '在线用户',
   '/dict': '字典管理',
+  '/menus': '菜单管理',
   '/ai': 'AI 智能助手',
   '/demo': '演示',
 };
@@ -237,6 +239,11 @@ const AppContent = () => {
       <Route path="/dict" element={
         <PrivateRoute isAuthenticated={isAuthenticated}>
           <DictManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/menus" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <MenuManagement />
         </PrivateRoute>
       } />
       <Route path="/ai" element={

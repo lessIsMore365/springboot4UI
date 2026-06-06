@@ -13,3 +13,4 @@ export { default as monitorService } from './monitorService';
 export { default as logService } from './logService';
 export { default as dictService } from './dictService';
 export { default as aiService } from './aiService';
+export { default as menuService } from './menuService';

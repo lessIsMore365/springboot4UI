@@ -1,0 +1,73 @@
+.menu-container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+.menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+.menu-header h2 { font-size: 24px; font-weight: 700; color: #1a202c; margin: 0; }
+.menu-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.menu-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+
+.menu-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.menu-table th { text-align: left; padding: 10px 12px; background: #f7fafc; color: #4a5568; font-weight: 600; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.menu-table td { padding: 8px 12px; border-bottom: 1px solid #f7fafc; color: #2d3748; }
+.menu-table tr:hover td { background: #f7fafc; }
+.menu-row-root td { font-weight: 600; background: #fafbfc; }
+
+.menu-type-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.type-m { background: #ebf8ff; color: #2b6cb0; }
+.type-c { background: #f0fff4; color: #276749; }
+.type-f { background: #faf5ff; color: #6b46c1; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal { background: #fff; border-radius: 12px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+.modal-header h3 { margin: 0; font-size: 17px; font-weight: 600; }
+.modal-body { padding: 20px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid #e2e8f0; }
+
+.btn-close { background: none; border: none; font-size: 22px; color: #a0aec0; cursor: pointer; line-height: 1; padding: 0 4px; }
+.btn-close:hover { color: #e53e3e; }
+
+/* Form grid */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 13px; font-weight: 500; color: #4a5568; }
+.form-group input, .form-group select { padding: 7px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; color: #2d3748; }
+.form-group input:focus, .form-group select:focus { outline: none; border-color: #4299e1; box-shadow: 0 0 0 2px rgba(66,153,225,0.15); }
+
+/* Menu checkboxes for role assignment */
+.menu-checkbox-tree { max-height: 350px; overflow-y: auto; }
+.menu-checkbox-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px; }
+.menu-checkbox-item:hover { background: #f7fafc; }
+.menu-checkbox-item input[type="checkbox"] { accent-color: #2b6cb0; }
+.menu-checkbox-label { font-size: 13px; color: #2d3748; }
+
+/* Buttons */
+.btn { padding: 6px 14px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: #4a5568; cursor: pointer; font-size: 13px; font-weight: 500; }
+.btn:hover { background: #f7fafc; }
+.btn-primary { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+.btn-primary:hover { background: #2c5282; }
+.btn-health { background: #38a169; color: #fff; border-color: #38a169; }
+.btn-health:hover { background: #2f855a; }
+.btn-danger { background: #e53e3e; color: #fff; border-color: #e53e3e; }
+.btn-danger:hover { background: #c53030; }
+.btn-test { background: #4299e1; color: #fff; border-color: #4299e1; }
+.btn-test:hover { background: #3182ce; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.alert { padding: 10px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
+.alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.loading { text-align: center; padding: 40px; color: #a0aec0; font-size: 14px; }
+
+/* Icon picker */
+.icon-picker-trigger { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; background: #fff; user-select: none; }
+.icon-picker-trigger:hover { border-color: #4299e1; }
+.icon-picker-current { font-size: 20px; }
+.icon-picker-grid { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; margin-top: 4px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; max-width: 360px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.icon-picker-clear { grid-column: 1 / -1; text-align: center; font-size: 12px; color: #a0aec0; cursor: pointer; padding: 4px; }
+.icon-picker-clear:hover { color: #e53e3e; }
+.icon-picker-item { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; font-size: 18px; border-radius: 6px; cursor: pointer; }
+.icon-picker-item:hover { background: #ebf4ff; }
+.icon-picker-item.selected { background: #4299e1; }

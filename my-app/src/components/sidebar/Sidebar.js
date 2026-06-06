@@ -1,43 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { menuService } from '../../services';
 import './Sidebar.css';
 
-const menuCategories = [
+// 静态后备菜单（API 获取失败时使用，与后端 seed data 结构一致）
+const FALLBACK_CATEGORIES = [
   {
-    key: 'system',
-    icon: '⚙️',
-    label: '系统管理',
+    key: 'system', icon: '⚙️', label: '系统管理',
     items: [
       { path: '/users', icon: '👥', label: '用户管理' },
       { path: '/roles', icon: '👑', label: '角色管理' },
       { path: '/permissions', icon: '🔑', label: '权限管理' },
       { path: '/dict', icon: '📖', label: '字典管理' },
+      { path: '/menus', icon: '📋', label: '菜单管理' },
     ],
   },
   {
-    key: 'business',
-    icon: '📋',
-    label: '业务功能',
+    key: 'payment', icon: '💰', label: '支付管理',
     items: [
-      { path: '/payment', icon: '💰', label: '支付管理' },
+      { path: '/payment?tab=order', icon: '📋', label: '支付订单' },
       { path: '/reconciliation', icon: '📈', label: '对帐管理' },
+      { path: '/payment-stats', icon: '📊', label: '支付统计' },
     ],
   },
   {
-    key: 'data',
-    icon: '🗄️',
-    label: '数据服务',
+    key: 'data', icon: '🗄️', label: '数据服务',
     items: [
       { path: '/redis', icon: '🗃️', label: 'Redis' },
     ],
   },
   {
-    key: 'devtools',
-    icon: '🔧',
-    label: '开发工具',
+    key: 'monitor', icon: '🔧', label: '监控管理',
     items: [
       { path: '/java21', icon: '☕', label: 'Java 21' },
-      { path: '/jvm', icon: '📈', label: 'JVM 监控' },
+      { path: '/jvm?tab=app', icon: '📈', label: 'JVM 监控' },
       { path: '/db-monitor', icon: '🗄️', label: '数据库监控' },
       { path: '/server-monitor', icon: '🖥️', label: '服务器监控' },
       { path: '/logs', icon: '📜', label: '日志管理' },
@@ -48,19 +44,105 @@ const menuCategories = [
   },
 ];
 
-const standaloneItems = [
+const FALLBACK_STANDALONE = [
   { path: '/demo', icon: '⚡', label: '演示' },
 ];
+
+// 根据名称匹配图标（后备方案）
+const NAME_ICON = {
+  system: '⚙️', user: '👥', role: '👑', permission: '🔑', dict: '📖', menu: '📋',
+  business: '📋', money: '💰', reconciliation: '📈',
+  data: '🗄️', redis: '🗃️',
+  devtools: '🔧', java21: '☕', monitor: '📈', db: '🗄️', server: '🖥️',
+  logs: '📜', operlog: '📋', online: '🟢', ai: '🤖',
+  demo: '⚡',
+};
+
+// 根据路由路径匹配图标（优先）
+const PATH_ICON = [
+  [/\/users\b/, '👥'], [/\/roles\b/, '👑'], [/\/permissions\b/, '🔑'],
+  [/\/dict\b/, '📖'], [/\/menus\b/, '📋'], [/\/payment\b/, '💰'],
+  [/\/reconciliation\b/, '📈'], [/\/redis\b/, '🗃️'], [/\/java21\b/, '☕'],
+  [/\/jvm\b/, '📈'], [/\/db-monitor\b/, '🗄️'], [/\/server-monitor\b/, '🖥️'],
+  [/\/logs\b/, '📜'], [/\/operlog\b/, '📋'], [/\/online\b/, '🟢'],
+  [/\/ai\b/, '🤖'], [/\/demo\b/, '⚡'],
+  [/system/, '⚙️'], [/monitor/, '🔧'],
+];
+
+const getIcon = (path, iconName, label) => {
+  // 后端直接存储的 emoji 优先
+  if (iconName && iconName.length <= 4 && /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2702}-\u{27B0}\u{1F900}-\u{1F9FF}\u{200D}\u{FE0F}]/u.test(iconName)) return iconName;
+  // 路径匹配
+  if (path) {
+    for (const [pattern, emoji] of PATH_ICON) {
+      if (pattern.test(path)) return emoji;
+    }
+  }
+  // 名称匹配
+  if (iconName && NAME_ICON[iconName]) return NAME_ICON[iconName];
+  if (label && NAME_ICON[label]) return NAME_ICON[label];
+  return '📄';
+};
+
+const buildTree = (menus) => {
+  if (!menus?.length) return { categories: [], standaloneItems: [] };
+  const visible = (m) => m.visible !== false && m.status !== false;
+  const sorted = (arr) => [...arr].sort((a, b) => a.sortOrder - b.sortOrder);
+  const dirs = sorted(menus.filter(m => m.menuType === 'M' && visible(m)));
+  const topItems = sorted(menus.filter(m => m.menuType === 'C' && visible(m) && m.parentId === 0));
+
+  const categories = dirs.map(dir => ({
+    key: `menu-${dir.id}`,
+    icon: dir.icon || 'default',
+    label: dir.name,
+    items: sorted((dir.children || []).filter(c => c.menuType === 'C' && visible(c)))
+      .map(c => ({ path: c.path, icon: c.icon || 'default', label: c.name })),
+  }));
+
+  const standaloneItems = topItems.map(item => ({
+    path: item.path,
+    icon: item.icon || 'default',
+    label: item.name,
+  }));
+
+  return { categories, standaloneItems };
+};
 
 const Sidebar = ({ isAuthenticated, currentUser, onLogout }) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState({
-    system: true,
-    business: false,
-    data: false,
-    devtools: false,
-  });
+  const [dynamicCategories, setDynamicCategories] = useState(null);
+  const [dynamicStandalone, setDynamicStandalone] = useState(null);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState({});
+
+  // 加载动态菜单
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    const fetchMenus = async () => {
+      setMenuLoading(true);
+      try {
+        const r = await menuService.getUserMenus();
+        if (!cancelled && r.success !== false && Array.isArray(r.data) && r.data.length > 0) {
+          const { categories, standaloneItems } = buildTree(r.data);
+          if (!cancelled && categories.length > 0) {
+            setDynamicCategories(categories);
+            setDynamicStandalone(standaloneItems);
+            const initialExpanded = {};
+            categories.forEach((cat, i) => { initialExpanded[cat.key] = i === 0; });
+            setExpandedCategories(prev => Object.keys(prev).length === 0 ? initialExpanded : prev);
+          }
+        }
+      } catch (e) { /* fallback to static menus */ }
+      finally { if (!cancelled) setMenuLoading(false); }
+    };
+    fetchMenus();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  const menuCategories = dynamicCategories || FALLBACK_CATEGORIES;
+  const standaloneItems = dynamicStandalone || FALLBACK_STANDALONE;
 
   const isActive = (path) => {
     const [pathOnly, query] = path.split('?');
@@ -111,30 +193,23 @@ const Sidebar = ({ isAuthenticated, currentUser, onLogout }) => {
         {/* 未登录时只显示登录/注册入口 */}
         {!isAuthenticated && (
           <>
-            <Link
-              to="/auth/login"
-              className={`sidebar-item${isActive('/auth/login') ? ' active' : ''}`}
-              style={{ paddingLeft: collapsed ? undefined : 16 }}
-              title="登录"
-            >
+            <Link to="/auth/login" className={`sidebar-item${isActive('/auth/login') ? ' active' : ''}`} style={{ paddingLeft: collapsed ? undefined : 16 }} title="登录">
               <span className="sidebar-item-icon">🔐</span>
               <span className="sidebar-item-label">登录</span>
             </Link>
-            <Link
-              to="/auth/register"
-              className={`sidebar-item${isActive('/auth/register') ? ' active' : ''}`}
-              style={{ paddingLeft: collapsed ? undefined : 16 }}
-              title="注册"
-            >
+            <Link to="/auth/register" className={`sidebar-item${isActive('/auth/register') ? ' active' : ''}`} style={{ paddingLeft: collapsed ? undefined : 16 }} title="注册">
               <span className="sidebar-item-icon">📝</span>
               <span className="sidebar-item-label">注册</span>
             </Link>
           </>
         )}
 
-        {/* 已登录时显示分类菜单 */}
+        {/* 已登录时显示动态菜单 */}
         {isAuthenticated && (
           <>
+            {menuLoading && dynamicCategories === null && (
+              <div style={{ padding: '12px 16px', color: '#a0aec0', fontSize: 12 }}>加载菜单中...</div>
+            )}
             {menuCategories.map(cat => (
               <div key={cat.key} className="sidebar-category">
                 <button
@@ -143,7 +218,7 @@ const Sidebar = ({ isAuthenticated, currentUser, onLogout }) => {
                   title={cat.label}
                 >
                   <span className={`sidebar-category-arrow${expandedCategories[cat.key] ? ' open' : ''}`}>▶</span>
-                  <span>{cat.icon}</span>
+                  <span>{getIcon(null, cat.icon, cat.label)}</span>
                   <span className="sidebar-category-label">{cat.label}</span>
                 </button>
                 <div
@@ -157,7 +232,7 @@ const Sidebar = ({ isAuthenticated, currentUser, onLogout }) => {
                       className={`sidebar-item${isActive(item.path) ? ' active' : ''}`}
                       title={collapsed ? item.label : undefined}
                     >
-                      <span className="sidebar-item-icon">{item.icon}</span>
+                      <span className="sidebar-item-icon">{getIcon(item.path, item.icon, item.label)}</span>
                       <span className="sidebar-item-label">{item.label}</span>
                     </Link>
                   ))}
@@ -174,7 +249,7 @@ const Sidebar = ({ isAuthenticated, currentUser, onLogout }) => {
                 style={{ paddingLeft: collapsed ? undefined : 16 }}
                 title={collapsed ? item.label : undefined}
               >
-                <span className="sidebar-item-icon">{item.icon}</span>
+                <span className="sidebar-item-icon">{getIcon(item.path, item.icon, item.label)}</span>
                 <span className="sidebar-item-label">{item.label}</span>
               </Link>
             ))}
