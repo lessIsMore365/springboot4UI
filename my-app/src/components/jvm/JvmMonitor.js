@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { monitorService } from '../../services';
+import JvmProcessMonitor from './JvmProcessMonitor';
+import JvmProcessChart from './JvmProcessChart';
 import './JvmMonitor.css';
 
 const formatBytes = (bytes) => {
@@ -126,6 +129,13 @@ const MemoryChart = ({ samples, intervalSeconds }) => {
 };
 
 const JvmMonitor = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const validPages = ['app', 'processes', 'chart'];
+  const activePage = validPages.includes(tabParam) ? tabParam : 'app';
+
+  const switchPage = (page) => setSearchParams({ tab: page });
+
   const [overview, setOverview] = useState(null);
   const [threads, setThreads] = useState(null);
   const [threadDump, setThreadDump] = useState(null);
@@ -250,6 +260,25 @@ const JvmMonitor = () => {
           </div>
         </div>
       )}
+
+      {/* Main page tabs */}
+      <div className="jvm-tabs" style={{ marginBottom: activePage === 'app' ? 0 : 20 }}>
+        {[
+          { key: 'app', label: '应用 JVM' },
+          { key: 'processes', label: '进程监控' },
+          { key: 'chart', label: '仪表盘' },
+        ].map(t => (
+          <button
+            key={t.key}
+            className={`jvm-tab ${activePage === t.key ? 'active' : ''}`}
+            onClick={() => switchPage(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activePage === 'app' && (<>
 
       <div className="jvm-tabs">
         {[
@@ -774,6 +803,15 @@ const JvmMonitor = () => {
           </div>
         )}
       </div>
+      </>)}
+
+      {activePage === 'processes' && (
+        <JvmProcessMonitor onOpenChart={() => switchPage('chart')} />
+      )}
+
+      {activePage === 'chart' && (
+        <JvmProcessChart onBack={() => switchPage('processes')} />
+      )}
     </div>
   );
 };

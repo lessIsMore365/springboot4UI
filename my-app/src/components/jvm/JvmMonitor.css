@@ -411,3 +411,15 @@
     font-size: 18px;
   }
 }
+
+/* JVM Process Monitor */
+.jvm-row-selected {
+  background: #ebf8ff !important;
+}
+
+.jvm-info-bar {
+  background: #f7fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}

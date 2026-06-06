@@ -35,6 +35,13 @@ export const monitorService = {
   // 在线用户
   getOnlineUsers: () => api.get('/api/monitor/online'),
   forceOffline: (authorizationId) => api.delete(`/api/monitor/online/${authorizationId}`),
+
+  // JVM 进程监控 (Arthas-like)
+  getProcesses: () => api.get('/api/monitor/jvm/processes'),
+  getProcessDetail: (pid) => api.get(`/api/monitor/jvm/processes/${pid}`),
+  getProcessGc: (pid) => api.get(`/api/monitor/jvm/processes/${pid}/gc`),
+  getProcessThreadDump: (pid) => api.get(`/api/monitor/jvm/processes/${pid}/thread-dump`),
+  getProcessesChartUrl: (token) => `http://localhost:8080/api/monitor/jvm/processes/chart?token=${encodeURIComponent(token)}`,
 };
 
 export default monitorService;

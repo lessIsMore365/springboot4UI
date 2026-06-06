@@ -15,6 +15,7 @@ import PaymentManagement from './components/payment/PaymentManagement';
 import ReconciliationManagement from './components/reconciliation/ReconciliationManagement';
 import Java21Demo from './components/java21/Java21Demo';
 import JvmMonitor from './components/jvm/JvmMonitor';
+
 import DbMonitor from './components/db/DbMonitor';
 import ServerMonitor from './components/server/ServerMonitor';
 import LogManagement from './components/log/LogManagement';
@@ -206,6 +207,8 @@ const AppContent = () => {
           <JvmMonitor />
         </PrivateRoute>
       } />
+      <Route path="/jvm-processes" element={<Navigate to="/jvm?tab=processes" />} />
+      <Route path="/jvm-processes-chart" element={<Navigate to="/jvm?tab=chart" />} />
       <Route path="/db-monitor" element={
         <PrivateRoute isAuthenticated={isAuthenticated}>
           <DbMonitor />
