@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService, demoService, redisService, paymentService } from '../services';
 import '../App.css';
 import './Home.css';
@@ -9,7 +10,17 @@ const StatusDot = ({ status }) => {
   return <span className={`status-dot ${pulse}`} style={{ background: color }} />;
 };
 
+const QUICK_LINKS = [
+  { path: '/users', icon: '👥', label: '用户管理', desc: '管理用户、分配角色' },
+  { path: '/roles', icon: '👑', label: '角色管理', desc: '角色与权限配置' },
+  { path: '/payment', icon: '💰', label: '支付管理', desc: '订单与对账' },
+  { path: '/jvm', icon: '📈', label: 'JVM 监控', desc: '应用运行状态' },
+  { path: '/db-monitor', icon: '🗄️', label: '数据库监控', desc: '连接池与查询' },
+  { path: '/server-monitor', icon: '🖥️', label: '服务器监控', desc: 'CPU、内存、磁盘' },
+];
+
 const Home = () => {
+  const navigate = useNavigate();
   const [services, setServices] = useState([
     { name: '认证服务', key: 'auth', status: 'checking', info: '' },
     { name: '数据库', key: 'db', status: 'checking', info: '' },
@@ -79,6 +90,23 @@ const Home = () => {
               <span className="status-text">
                 {s.status === 'checking' ? '检测中...' : s.status === 'UP' ? '运行正常' : s.info || '不可用'}
               </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 快捷入口 */}
+      <section className="quick-section">
+        <h3 className="quick-title">快捷入口</h3>
+        <div className="quick-grid">
+          {QUICK_LINKS.map(link => (
+            <div key={link.path} className="quick-card" onClick={() => navigate(link.path)}>
+              <span className="quick-icon">{link.icon}</span>
+              <div className="quick-info">
+                <span className="quick-label">{link.label}</span>
+                <span className="quick-desc">{link.desc}</span>
+              </div>
+              <span className="quick-arrow">→</span>
             </div>
           ))}
         </div>

@@ -65,8 +65,9 @@ const DESIRED_MENUS = {
       { name: "用户管理", path: "/users", icon: "👥", menuType: "C", sortOrder: 1 },
       { name: "角色管理", path: "/roles", icon: "👑", menuType: "C", sortOrder: 2 },
       { name: "权限管理", path: "/permissions", icon: "🔑", menuType: "C", sortOrder: 3 },
-      { name: "字典管理", path: "/dict", icon: "📖", menuType: "C", sortOrder: 4 },
-      { name: "菜单管理", path: "/menus", icon: "📋", menuType: "C", sortOrder: 5 },
+      { name: "部门管理", path: "/dept", icon: "🏢", menuType: "C", sortOrder: 4 },
+      { name: "字典管理", path: "/dict", icon: "📖", menuType: "C", sortOrder: 5 },
+      { name: "菜单管理", path: "/menus", icon: "📋", menuType: "C", sortOrder: 6 },
     ]},
     { name: "支付管理", path: "/payment", icon: "💰", menuType: "M", sortOrder: 2, children: [
       { name: "支付订单", path: "/payment?tab=order", icon: "📋", menuType: "C", sortOrder: 1 },
@@ -88,6 +89,7 @@ const DESIRED_MENUS = {
     ]},
   ],
   standalone: [
+    { name: "调度任务", path: "/scheduler", icon: "⏰", menuType: "C", sortOrder: 98 },
     { name: "演示", path: "/demo", icon: "⚡", menuType: "C", sortOrder: 99 },
   ],
 };

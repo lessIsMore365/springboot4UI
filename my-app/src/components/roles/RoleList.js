@@ -3,7 +3,11 @@ import { roleService } from '../../services';
 import './Roles.css';
 
 const INITIAL_FORM = {
-  code: '', name: '', description: ''
+  code: '', name: '', description: '', dataScope: 1
+};
+
+const DATA_SCOPE_LABELS = {
+  1: '全部数据', 2: '自定义数据', 3: '本部门数据', 4: '本部门及子部门', 5: '仅本人数据'
 };
 
 const RoleList = () => {
@@ -362,6 +366,7 @@ const RoleList = () => {
                   <th>编码</th>
                   <th>名称</th>
                   <th>描述</th>
+                  <th>数据权限</th>
                   <th>创建时间</th>
                   <th>更新时间</th>
                 </tr>
@@ -374,12 +379,13 @@ const RoleList = () => {
                       <td><span className="role-code">{role.code}</span></td>
                       <td>{role.name}</td>
                       <td>{role.description || '-'}</td>
+                      <td>{DATA_SCOPE_LABELS[role.dataScope] || role.dataScope || '-'}</td>
                       <td>{role.createTime ? new Date(role.createTime).toLocaleString() : '-'}</td>
                       <td>{role.updateTime ? new Date(role.updateTime).toLocaleString() : '-'}</td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan="6" className="no-data">暂无角色数据</td></tr>
+                  <tr><td colSpan="7" className="no-data">暂无角色数据</td></tr>
                 )}
               </tbody>
             </table>
@@ -427,6 +433,12 @@ const RoleList = () => {
                   <label>描述</label>
                   <textarea name="description" value={formData.description}
                     onChange={handleFormChange} rows="3" disabled={formLoading} placeholder="角色描述" />
+                </div>
+                <div className="form-group">
+                  <label>数据权限</label>
+                  <select name="dataScope" value={formData.dataScope} onChange={handleFormChange} disabled={formLoading}>
+                    {Object.entries(DATA_SCOPE_LABELS).map(([k, v]) => <option key={k} value={Number(k)}>{v}</option>)}
+                  </select>
                 </div>
               </div>
               <div className="modal-actions">

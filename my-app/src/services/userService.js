@@ -104,6 +104,24 @@ export const userService = {
   },
 
   /**
+   * 更新用户
+   * @param {Object} userData - 用户数据（必须包含 id）
+   * @returns {Promise} 更新结果
+   */
+  updateUser: (userData) => {
+    return api.put('/api/users', userData);
+  },
+
+  /**
+   * 删除用户
+   * @param {number|string} id - 用户ID
+   * @returns {Promise} 删除结果
+   */
+  deleteUser: (id) => {
+    return api.delete(`/api/users/${id}`);
+  },
+
+  /**
    * 用户服务健康检查
    * @returns {Promise} 健康状态
    */

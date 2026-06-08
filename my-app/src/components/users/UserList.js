@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { userService } from '../../services';
+import { userService, deptService } from '../../services';
 import './Users.css';
 
 const INITIAL_FORM = {
-  username: '', password: '', email: '', age: '', roles: 'ROLE_USER', remark: ''
+  username: '', password: '', email: '', age: '', deptId: '', roles: 'ROLE_USER', remark: ''
 };
 
 const UserList = () => {
@@ -19,6 +19,19 @@ const UserList = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
+
+  // Edit state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState(INITIAL_FORM);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
+  const [editId, setEditId] = useState(null);
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Batch create state
   const [batchCount, setBatchCount] = useState(10);
@@ -61,17 +74,118 @@ const UserList = () => {
 
   const toggleAsyncMode = () => setUseAsync(!useAsync);
 
+  // Department tree for dropdown
+  const [depts, setDepts] = useState([]);
+  const [deptsLoading, setDeptsLoading] = useState(false);
+
+  const flattenDepts = (nodes, level = 0) => {
+    const result = [];
+    nodes.forEach(n => {
+      result.push({ ...n, _level: level });
+      if (n.children?.length) result.push(...flattenDepts(n.children, level + 1));
+    });
+    return result;
+  };
+
+  const loadDepts = async () => {
+    setDeptsLoading(true);
+    try {
+      const r = await deptService.getTree();
+      if (r.success !== false) setDepts(r.data || []);
+    } catch (e) { /* ignore */ }
+    finally { setDeptsLoading(false); }
+  };
+
   // Create user handlers
   const openCreateModal = () => {
     setFormData(INITIAL_FORM);
     setFormError('');
     setFormSuccess('');
     setShowCreateModal(true);
+    if (depts.length === 0) loadDepts();
   };
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Department name resolver
+  const getDeptName = (deptId) => {
+    if (!deptId || !depts.length) return '-';
+    const flat = flattenDepts(depts);
+    const found = flat.find(d => String(d.id) === String(deptId));
+    return found ? found.name : '-';
+  };
+
+  // Open edit modal
+  const openEditModal = (user) => {
+    setEditId(user.id);
+    setEditData({
+      username: user.username || '',
+      password: '',
+      email: user.email || '',
+      age: user.age || '',
+      deptId: user.deptId || '',
+      roles: user.roles || 'ROLE_USER',
+      remark: user.remark || '',
+    });
+    setEditError('');
+    setEditSuccess('');
+    setShowEditModal(true);
+    if (depts.length === 0) loadDepts();
+  };
+
+  const handleEditUser = async (e) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError('');
+    setEditSuccess('');
+    try {
+      const payload = {
+        id: editId,
+        ...editData,
+        age: editData.age ? parseInt(editData.age) : undefined,
+        deptId: editData.deptId ? parseInt(editData.deptId) : undefined,
+      };
+      if (!payload.password) delete payload.password;
+      const result = await userService.updateUser(payload);
+      if (result.success) {
+        setEditSuccess('用户更新成功！');
+        loadUsers(pagination.page);
+        setTimeout(() => setShowEditModal(false), 1000);
+      } else {
+        setEditError(result.message || '更新失败');
+      }
+    } catch (err) {
+      setEditError(err.message || '请求失败');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      const result = await userService.deleteUser(deleteTarget.id);
+      if (result.success) {
+        setDeleteTarget(null);
+        loadUsers(pagination.page);
+      } else {
+        setDeleteError(result.message || '删除失败');
+      }
+    } catch (err) {
+      setDeleteError(err.message || '请求失败');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleCreateUser = async (e) => {
@@ -82,7 +196,8 @@ const UserList = () => {
     try {
       const result = await userService.createUser({
         ...formData,
-        age: formData.age ? parseInt(formData.age) : undefined
+        age: formData.age ? parseInt(formData.age) : undefined,
+        deptId: formData.deptId ? parseInt(formData.deptId) : undefined,
       });
       if (result.success) {
         setFormSuccess(`用户创建成功！`);
@@ -255,9 +370,11 @@ const UserList = () => {
                   <th>用户名</th>
                   <th>邮箱</th>
                   <th>年龄</th>
+                  <th>部门</th>
                   <th>角色</th>
                   <th>状态</th>
                   <th>创建时间</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -268,6 +385,7 @@ const UserList = () => {
                       <td>{user.username}</td>
                       <td>{user.email || '-'}</td>
                       <td>{user.age || '-'}</td>
+                      <td>{user.deptName || getDeptName(user.deptId)}</td>
                       <td>{user.roles || '-'}</td>
                       <td>
                         <span className={`status ${user.enabled ? 'active' : 'inactive'}`}>
@@ -275,10 +393,14 @@ const UserList = () => {
                         </span>
                       </td>
                       <td>{user.createTime ? new Date(user.createTime).toLocaleString() : '-'}</td>
+                      <td className="action-cell">
+                        <button className="btn-action btn-edit" onClick={() => openEditModal(user)}>编辑</button>
+                        <button className="btn-action btn-delete" onClick={() => setDeleteTarget(user)}>删除</button>
+                      </td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan="7" className="no-data">暂无用户数据</td></tr>
+                  <tr><td colSpan="9" className="no-data">暂无用户数据</td></tr>
                 )}
               </tbody>
             </table>
@@ -334,6 +456,15 @@ const UserList = () => {
                     onChange={handleFormChange} min="1" max="150" disabled={formLoading} />
                 </div>
                 <div className="form-group">
+                  <label>部门</label>
+                  <select name="deptId" value={formData.deptId} onChange={handleFormChange} disabled={formLoading || deptsLoading}>
+                    <option value="">请选择部门</option>
+                    {flattenDepts(depts).map(d => (
+                      <option key={d.id} value={d.id}>{'　'.repeat(d._level)}{d._level > 0 ? '└ ' : ''}{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
                   <label>角色</label>
                   <select name="roles" value={formData.roles}
                     onChange={handleFormChange} disabled={formLoading}>
@@ -356,6 +487,95 @@ const UserList = () => {
                   disabled={formLoading}>取消</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowEditModal(false); }}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>编辑用户</h3>
+              <button className="btn-close" onClick={() => setShowEditModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleEditUser}>
+              {editError && <div className="alert alert-error">{editError}</div>}
+              {editSuccess && <div className="alert alert-success">{editSuccess}</div>}
+              <div className="modal-form-grid">
+                <div className="form-group">
+                  <label>用户名 *</label>
+                  <input type="text" name="username" value={editData.username}
+                    onChange={handleEditChange} required disabled={editLoading} />
+                </div>
+                <div className="form-group">
+                  <label>密码（留空不修改）</label>
+                  <input type="password" name="password" value={editData.password}
+                    onChange={handleEditChange} disabled={editLoading} />
+                </div>
+                <div className="form-group">
+                  <label>邮箱</label>
+                  <input type="email" name="email" value={editData.email}
+                    onChange={handleEditChange} disabled={editLoading} />
+                </div>
+                <div className="form-group">
+                  <label>年龄</label>
+                  <input type="number" name="age" value={editData.age}
+                    onChange={handleEditChange} min="1" max="150" disabled={editLoading} />
+                </div>
+                <div className="form-group">
+                  <label>部门</label>
+                  <select name="deptId" value={editData.deptId} onChange={handleEditChange} disabled={editLoading || deptsLoading}>
+                    <option value="">请选择部门</option>
+                    {flattenDepts(depts).map(d => (
+                      <option key={d.id} value={d.id}>{'　'.repeat(d._level)}{d._level > 0 ? '└ ' : ''}{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>角色</label>
+                  <select name="roles" value={editData.roles}
+                    onChange={handleEditChange} disabled={editLoading}>
+                    <option value="ROLE_USER">普通用户</option>
+                    <option value="ROLE_ADMIN">管理员</option>
+                    <option value="ROLE_USER,ROLE_ADMIN">普通用户+管理员</option>
+                  </select>
+                </div>
+                <div className="form-group form-group-full">
+                  <label>备注</label>
+                  <textarea name="remark" value={editData.remark}
+                    onChange={handleEditChange} rows="2" disabled={editLoading} />
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="submit" className="btn btn-create" disabled={editLoading}>
+                  {editLoading ? '更新中...' : '更新'}
+                </button>
+                <button type="button" className="btn btn-cancel" onClick={() => setShowEditModal(false)}
+                  disabled={editLoading}>取消</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => { if (!deleteLoading) setDeleteTarget(null); }}>
+          <div className="modal-content" style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3>确认删除</h3>
+              <button className="btn-close" onClick={() => setDeleteTarget(null)} disabled={deleteLoading}>×</button>
+            </div>
+            {deleteError && <div className="alert alert-error">{deleteError}</div>}
+            <p style={{ color: '#4a5568', marginBottom: 8 }}>确定要删除用户 <strong>{deleteTarget.username}</strong> 吗？</p>
+            <p style={{ color: '#e53e3e', fontSize: 13 }}>此操作不可恢复。</p>
+            <div className="modal-actions">
+              <button className="btn btn-delete-danger" onClick={handleDeleteUser} disabled={deleteLoading}>
+                {deleteLoading ? '删除中...' : '确认删除'}
+              </button>
+              <button className="btn btn-cancel" onClick={() => setDeleteTarget(null)} disabled={deleteLoading}>取消</button>
+            </div>
           </div>
         </div>
       )}

@@ -11,6 +11,7 @@ const FALLBACK_CATEGORIES = [
       { path: '/users', icon: '👥', label: '用户管理' },
       { path: '/roles', icon: '👑', label: '角色管理' },
       { path: '/permissions', icon: '🔑', label: '权限管理' },
+      { path: '/dept', icon: '🏢', label: '部门管理' },
       { path: '/dict', icon: '📖', label: '字典管理' },
       { path: '/menus', icon: '📋', label: '菜单管理' },
     ],
@@ -20,7 +21,7 @@ const FALLBACK_CATEGORIES = [
     items: [
       { path: '/payment?tab=order', icon: '📋', label: '支付订单' },
       { path: '/reconciliation', icon: '📈', label: '对帐管理' },
-      { path: '/payment-stats', icon: '📊', label: '支付统计' },
+      { path: '/payment?tab=stats', icon: '📊', label: '支付统计' },
     ],
   },
   {
@@ -45,27 +46,28 @@ const FALLBACK_CATEGORIES = [
 ];
 
 const FALLBACK_STANDALONE = [
+  { path: '/scheduler', icon: '⏰', label: '调度任务' },
   { path: '/demo', icon: '⚡', label: '演示' },
 ];
 
 // 根据名称匹配图标（后备方案）
 const NAME_ICON = {
-  system: '⚙️', user: '👥', role: '👑', permission: '🔑', dict: '📖', menu: '📋',
+  system: '⚙️', user: '👥', role: '👑', permission: '🔑', dept: '🏢', dict: '📖', menu: '📋',
   business: '📋', money: '💰', reconciliation: '📈',
   data: '🗄️', redis: '🗃️',
   devtools: '🔧', java21: '☕', monitor: '📈', db: '🗄️', server: '🖥️',
   logs: '📜', operlog: '📋', online: '🟢', ai: '🤖',
-  demo: '⚡',
+  scheduler: '⏰', demo: '⚡',
 };
 
 // 根据路由路径匹配图标（优先）
 const PATH_ICON = [
   [/\/users\b/, '👥'], [/\/roles\b/, '👑'], [/\/permissions\b/, '🔑'],
-  [/\/dict\b/, '📖'], [/\/menus\b/, '📋'], [/\/payment\b/, '💰'],
+  [/\/dept\b/, '🏢'], [/\/dict\b/, '📖'], [/\/menus\b/, '📋'], [/\/payment\b/, '💰'],
   [/\/reconciliation\b/, '📈'], [/\/redis\b/, '🗃️'], [/\/java21\b/, '☕'],
   [/\/jvm\b/, '📈'], [/\/db-monitor\b/, '🗄️'], [/\/server-monitor\b/, '🖥️'],
   [/\/logs\b/, '📜'], [/\/operlog\b/, '📋'], [/\/online\b/, '🟢'],
-  [/\/ai\b/, '🤖'], [/\/demo\b/, '⚡'],
+  [/\/ai\b/, '🤖'], [/\/scheduler\b/, '⏰'], [/\/demo\b/, '⚡'],
   [/system/, '⚙️'], [/monitor/, '🔧'],
 ];
 

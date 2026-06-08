@@ -77,6 +77,10 @@ const OperlogManagement = () => {
     const map = { INSERT: '新增', UPDATE: '修改', DELETE: '删除', GRANT: '授权', EXPORT: '导出', IMPORT: '导入', OTHER: '其他' };
     return map[t] || t;
   };
+  const operatorTypeLabel = (t) => {
+    const map = { MANAGE: '后台管理', MOBILE: '移动端', SYSTEM: '系统', OTHER: '其他' };
+    return map[t] || t || '-';
+  };
 
   return (
     <div className="operlog-container">
@@ -134,6 +138,7 @@ const OperlogManagement = () => {
                   <th>标题</th>
                   <th>业务类型</th>
                   <th>操作人</th>
+                  <th>操作类型</th>
                   <th>请求方式</th>
                   <th>URL</th>
                   <th>IP</th>
@@ -150,6 +155,7 @@ const OperlogManagement = () => {
                     <td>{log.title || '-'}</td>
                     <td><span className={`operlog-btype ${(log.businessType || '').toLowerCase()}`}>{businessTypeLabel(log.businessType)}</span></td>
                     <td>{log.operName || '-'}</td>
+                    <td>{operatorTypeLabel(log.operatorType)}</td>
                     <td><span className="operlog-method">{log.requestMethod || '-'}</span></td>
                     <td className="cell-ellipsis" title={log.operUrl}>{log.operUrl || '-'}</td>
                     <td>{log.operIp || '-'}</td>
@@ -158,7 +164,7 @@ const OperlogManagement = () => {
                     <td>{log.createTime ? new Date(log.createTime).toLocaleString() : '-'}</td>
                     <td><button className="btn btn-test btn-sm" onClick={() => handleViewDetail(log.id)} disabled={detailLoading}>详情</button></td>
                   </tr>
-                )) : <tr><td colSpan="11" className="no-data">暂无操作日志</td></tr>}
+                )) : <tr><td colSpan="12" className="no-data">暂无操作日志</td></tr>}
               </tbody>
             </table>
             {pagination.pages > 1 && (
@@ -186,7 +192,8 @@ const OperlogManagement = () => {
                     {[
                       ['标题', detail.data?.title], ['业务类型', businessTypeLabel(detail.data?.businessType)],
                       ['方法', detail.data?.method], ['请求方式', detail.data?.requestMethod],
-                      ['操作人', detail.data?.operName], ['URL', detail.data?.operUrl],
+                      ['操作人', detail.data?.operName], ['操作类型', operatorTypeLabel(detail.data?.operatorType)],
+                      ['URL', detail.data?.operUrl],
                       ['IP', detail.data?.operIp], ['状态', detail.data?.status === 0 ? '成功' : '失败'],
                       ['耗时', detail.data?.costTime != null ? `${detail.data.costTime}ms` : '-'],
                       ['时间', detail.data?.createTime ? new Date(detail.data.createTime).toLocaleString() : '-'],

@@ -23,7 +23,9 @@ import OperlogManagement from './components/operlog/OperlogManagement';
 import OnlineUserManagement from './components/online/OnlineUserManagement';
 import DictManagement from './components/dict/DictManagement';
 import MenuManagement from './components/menu/MenuManagement';
+import DeptManagement from './components/dept/DeptManagement';
 import AiManagement from './components/ai/AiManagement';
+import SchedulerManagement from './components/scheduler/SchedulerManagement';
 import Sidebar from './components/sidebar/Sidebar';
 
 import './App.css';
@@ -110,6 +112,8 @@ const pageTitles = {
   '/online': '在线用户',
   '/dict': '字典管理',
   '/menus': '菜单管理',
+  '/dept': '部门管理',
+  '/scheduler': '调度任务',
   '/ai': 'AI 智能助手',
   '/demo': '演示',
 };
@@ -194,6 +198,7 @@ const AppContent = () => {
           <PaymentManagement />
         </PrivateRoute>
       } />
+      <Route path="/payment-stats" element={<Navigate to="/payment?tab=stats" />} />
       <Route path="/reconciliation" element={
         <PrivateRoute isAuthenticated={isAuthenticated}>
           <ReconciliationManagement />
@@ -244,6 +249,16 @@ const AppContent = () => {
       <Route path="/menus" element={
         <PrivateRoute isAuthenticated={isAuthenticated}>
           <MenuManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/dept" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <DeptManagement />
+        </PrivateRoute>
+      } />
+      <Route path="/scheduler" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <SchedulerManagement />
         </PrivateRoute>
       } />
       <Route path="/ai" element={
