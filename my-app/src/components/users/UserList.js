@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { userService, deptService } from '../../services';
+import { userService, deptService, roleService } from '../../services';
+import MultiSelect from '../common/MultiSelect';
 import './Users.css';
 
 const INITIAL_FORM = {
@@ -77,6 +78,7 @@ const UserList = () => {
   // Department tree for dropdown
   const [depts, setDepts] = useState([]);
   const [deptsLoading, setDeptsLoading] = useState(false);
+  const [rolesList, setRolesList] = useState([]);
 
   const flattenDepts = (nodes, level = 0) => {
     const result = [];
@@ -96,6 +98,13 @@ const UserList = () => {
     finally { setDeptsLoading(false); }
   };
 
+  const loadRoles = async () => {
+    try {
+      const r = await roleService.getRoles(1, 100);
+      if (r.success) setRolesList(r.data || []);
+    } catch (e) { /* ignore */ }
+  };
+
   // Create user handlers
   const openCreateModal = () => {
     setFormData(INITIAL_FORM);
@@ -103,6 +112,7 @@ const UserList = () => {
     setFormSuccess('');
     setShowCreateModal(true);
     if (depts.length === 0) loadDepts();
+    if (rolesList.length === 0) loadRoles();
   };
 
   const handleFormChange = (e) => {
@@ -139,6 +149,7 @@ const UserList = () => {
     setEditSuccess('');
     setShowEditModal(true);
     if (depts.length === 0) loadDepts();
+    if (rolesList.length === 0) loadRoles();
   };
 
   const handleEditUser = async (e) => {
@@ -466,12 +477,9 @@ const UserList = () => {
                 </div>
                 <div className="form-group">
                   <label>角色</label>
-                  <select name="roles" value={formData.roles}
-                    onChange={handleFormChange} disabled={formLoading}>
-                    <option value="ROLE_USER">普通用户</option>
-                    <option value="ROLE_ADMIN">管理员</option>
-                    <option value="ROLE_USER,ROLE_ADMIN">普通用户+管理员</option>
-                  </select>
+                  <MultiSelect options={rolesList} value={formData.roles}
+                    onChange={v => setFormData(prev => ({ ...prev, roles: v }))}
+                    disabled={formLoading} />
                 </div>
                 <div className="form-group form-group-full">
                   <label>备注</label>
@@ -534,12 +542,9 @@ const UserList = () => {
                 </div>
                 <div className="form-group">
                   <label>角色</label>
-                  <select name="roles" value={editData.roles}
-                    onChange={handleEditChange} disabled={editLoading}>
-                    <option value="ROLE_USER">普通用户</option>
-                    <option value="ROLE_ADMIN">管理员</option>
-                    <option value="ROLE_USER,ROLE_ADMIN">普通用户+管理员</option>
-                  </select>
+                  <MultiSelect options={rolesList} value={editData.roles}
+                    onChange={v => setEditData(prev => ({ ...prev, roles: v }))}
+                    disabled={editLoading} />
                 </div>
                 <div className="form-group form-group-full">
                   <label>备注</label>

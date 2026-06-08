@@ -17,6 +17,17 @@ const DeptManagement = () => {
 
   const [roles, setRoles] = useState([]);
 
+  const loadDepts = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const r = await deptService.getTree();
+      if (r.success !== false) setDepts(r.data || []);
+      else setError(r.message || '获取部门失败');
+    } catch (e) { setError(e.message || '请求失败'); }
+    finally { setLoading(false); }
+  }, []);
+
   const loadRoles = useCallback(async () => {
     try {
       const r = await roleService.getRoles(1, 100);
@@ -30,20 +41,7 @@ const DeptManagement = () => {
     return r ? r.name : '-';
   };
 
-  useEffect(() => { loadDepts(); loadRoles(); }, [loadDepts]); // eslint-disable-line
-
-  const loadDepts = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const r = await deptService.getTree();
-      if (r.success !== false) setDepts(r.data || []);
-      else setError(r.message || '获取部门失败');
-    } catch (e) { setError(e.message || '请求失败'); }
-    finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { loadDepts(); }, [loadDepts]);
+  useEffect(() => { loadDepts(); loadRoles(); }, [loadDepts, loadRoles]);
 
   const flatten = (nodes, level = 0) => {
     const result = [];

@@ -56,8 +56,16 @@ const MenuManagement = () => {
     return result;
   };
 
+  const flatMenus = flatten(menus);
+
+  const nextSortOrder = (parentId) => {
+    const siblings = flatMenus.filter(m => m.parentId === parentId);
+    if (siblings.length === 0) return 10;
+    return Math.max(...siblings.map(m => m.sortOrder || 0)) + 10;
+  };
+
   const openAdd = (parentId = 0) => {
-    setForm({ ...INIT_FORM, parentId });
+    setForm({ ...INIT_FORM, parentId, sortOrder: nextSortOrder(parentId) });
     setEditingId(null);
     setFormError('');
     setShowForm(true);
@@ -86,7 +94,7 @@ const MenuManagement = () => {
     setFormLoading(true);
     setFormError('');
     try {
-      const data = { ...form, visible: form.visible ? 1 : 0, status: form.status ? 1 : 0 };
+      const data = { ...form, visible: form.visible ? 0 : 1, status: form.status ? 0 : 1 };
       let r;
       if (editingId) {
         r = await menuService.update({ ...data, id: editingId });
@@ -159,8 +167,6 @@ const MenuManagement = () => {
     });
     return opts;
   };
-
-  const flatMenus = flatten(menus);
 
   return (
     <div className="menu-container">
