@@ -27,7 +27,9 @@ const FALLBACK_CATEGORIES = [
   {
     key: 'data', icon: '🗄️', label: '数据服务',
     items: [
-      { path: '/redis', icon: '🗃️', label: 'Redis' },
+      { path: '/redis?tab=ops', icon: '🔧', label: '基础操作' },
+      { path: '/redis?tab=cache', icon: '📊', label: '缓存管理' },
+      { path: '/redis?tab=monitor', icon: '📈', label: '服务监控' },
     ],
   },
   {

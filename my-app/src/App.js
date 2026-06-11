@@ -100,7 +100,7 @@ const pageTitles = {
   '/users': '用户管理',
   '/roles': '角色管理',
   '/permissions': '权限管理',
-  '/redis': 'Redis 操作',
+  '/redis': '数据服务',
   '/payment': '支付管理',
   '/reconciliation': '对帐管理',
   '/java21': 'Java 21 新特性',

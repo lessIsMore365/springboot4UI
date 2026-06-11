@@ -57,7 +57,11 @@ export const paymentService = {
   getStatsByBizType: (params = {}) => api.get('/api/payment/stats/by-biz-type', { params }),
   getStatsByStatus: (params = {}) => api.get('/api/payment/stats/by-status', { params }),
   getStatsRecent: () => api.get('/api/payment/stats/recent'),
-  getStatsChartUrl: (token) => `${api.defaults.baseURL || ''}/api/payment/stats/chart?token=${encodeURIComponent(token)}`,
+  getStatsChartUrl: (token) => {
+    const isDevServer = process.env.NODE_ENV === 'development' && window.location.port === '3000';
+    const base = isDevServer ? 'http://localhost:8080' : (api.defaults.baseURL || '');
+    return `${base}/api/payment/stats/chart?token=${encodeURIComponent(token)}`;
+  },
 };
 
 export default paymentService;

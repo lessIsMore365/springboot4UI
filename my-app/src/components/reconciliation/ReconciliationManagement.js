@@ -222,16 +222,16 @@ const ReconciliationManagement = () => {
             <span>对帐明细</span>
             <button className="btn-close" onClick={() => setDetails(null)}>×</button>
           </div>
-          {details.success && details.summary && (
+          {details.success && details.data?.summary && (
             <div className="detail-summary">
-              <span>总计: {details.summary.total}</span>
-              <span className="success">一致: {details.summary.match}</span>
-              <span className="warning">不符: {details.summary.mismatch}</span>
-              <span className="error">仅本地: {details.summary.localOnly}</span>
-              <span className="info">仅平台: {details.summary.remoteOnly}</span>
+              <span>总计: {details.data.summary.total}</span>
+              <span className="success">一致: {details.data.summary.match}</span>
+              <span className="warning">不符: {details.data.summary.mismatch}</span>
+              <span className="error">仅本地: {details.data.summary.localOnly}</span>
+              <span className="info">仅平台: {details.data.summary.remoteOnly}</span>
             </div>
           )}
-          {details.success && details.data && details.data.length > 0 && (
+          {details.success && details.data?.details?.length > 0 && (
             <table className="detail-table">
               <thead>
                 <tr>
@@ -246,7 +246,7 @@ const ReconciliationManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {details.data.map(d => (
+                {details.data.details.map(d => (
                   <tr key={d.id}>
                     <td>{d.orderNo}</td>
                     <td>{d.tradeNo || '-'}</td>
@@ -261,7 +261,7 @@ const ReconciliationManagement = () => {
               </tbody>
             </table>
           )}
-          {(!details.data || details.data.length === 0) && (
+          {(!details.data?.details || details.data.details.length === 0) && (
             <pre>{JSON.stringify(details, null, 2)}</pre>
           )}
         </div>

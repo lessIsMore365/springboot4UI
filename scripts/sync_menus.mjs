@@ -75,7 +75,9 @@ const DESIRED_MENUS = {
       { name: "支付统计", path: "/payment-stats", icon: "📊", menuType: "C", sortOrder: 3 },
     ]},
     { name: "数据服务", path: "/data", icon: "🗄️", menuType: "M", sortOrder: 3, children: [
-      { name: "Redis", path: "/redis", icon: "🗃️", menuType: "C", sortOrder: 1 },
+      { name: "基础操作", path: "/redis?tab=ops", icon: "🔧", menuType: "C", sortOrder: 1 },
+      { name: "缓存管理", path: "/redis?tab=cache", icon: "📊", menuType: "C", sortOrder: 2 },
+      { name: "服务监控", path: "/redis?tab=monitor", icon: "📈", menuType: "C", sortOrder: 3 },
     ]},
     { name: "监控管理", path: "/monitor", icon: "🔧", menuType: "M", sortOrder: 4, children: [
       { name: "Java 21", path: "/java21", icon: "☕", menuType: "C", sortOrder: 1 },

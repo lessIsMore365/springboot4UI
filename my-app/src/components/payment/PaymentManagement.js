@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as echarts from 'echarts';
-import { paymentService } from '../../services';
+import { paymentService, dictService } from '../../services';
 import './Payment.css';
 
-const INITIAL_FORM = { subject: '', body: '', amount: '', paymentMethod: 'ALIPAY', tradeType: 'PAGE', bizType: '' };
+const INITIAL_FORM = { subject: '', body: '', amount: '', paymentMethod: 'ALIPAY', tradeType: 'PAGE', bizType: 'ORDER' };
 
 const processStatusLabel = (s) => {
   const map = {
@@ -41,6 +41,7 @@ const PaymentManagement = () => {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [bizTypes, setBizTypes] = useState([]);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
@@ -123,6 +124,14 @@ const PaymentManagement = () => {
   };
 
   useEffect(() => { loadOrders(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    dictService.getDictDataByType('biz_type').then(result => {
+      if (result.success) {
+        setBizTypes((result.data || []).map(d => ({ value: d.dictValue, label: d.dictLabel })));
+      }
+    }).catch(() => {});
+  }, []);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) loadOrders(newPage);
@@ -274,8 +283,9 @@ const PaymentManagement = () => {
         notifyFilterOrderNo || undefined
       );
       if (result.success) {
-        setNotifyLogs(result.data || []);
-        setNotifyPagination(result.pagination || { page, size: notifyPagination.size, total: 0, pages: 0 });
+        const data = result.data || {};
+        setNotifyLogs(data.records || []);
+        setNotifyPagination({ page: data.page || 1, size: data.size || notifyPagination.size, total: data.total || 0, pages: data.pages || 0 });
       } else {
         setNotifyError(result.message || '获取回调日志失败');
       }
@@ -531,6 +541,11 @@ const PaymentManagement = () => {
   };
 
   // ======================== Shared helpers ========================
+
+  const bizTypeLabel = (t) => {
+    const item = bizTypes.find(d => d.value === t);
+    return item ? item.label : (t || '-');
+  };
 
   const tradeTypeLabel = (t) => {
     const map = { PAGE: 'PC网页', WAP: '移动H5', APP: '原生App', JSAPI: '小程序/公众号' };
@@ -1063,7 +1078,7 @@ const PaymentManagement = () => {
                 {statsLoading ? '查询中...' : '查询'}
               </button>
             </div>
-            <button className="btn btn-health" onClick={openChartPage}>图表页面</button>
+            <button type="button" className="btn btn-health" onClick={openChartPage}>图表页面</button>
           </div>
 
           {statsLoading ? (
@@ -1205,8 +1220,10 @@ const PaymentManagement = () => {
                 </div>
                 <div className="form-group">
                   <label>业务类型</label>
-                  <input type="text" name="bizType" value={formData.bizType}
-                    onChange={handleFormChange} placeholder="如: RECHARGE/ORDER/VIP" disabled={formLoading} />
+                  <select name="bizType" value={formData.bizType}
+                    onChange={handleFormChange} disabled={formLoading}>
+                    {bizTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
                 </div>
                 <div className="form-group form-group-full">
                   <label>商品描述</label>

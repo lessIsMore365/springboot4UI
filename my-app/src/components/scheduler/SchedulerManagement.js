@@ -38,12 +38,15 @@ const SchedulerManagement = () => {
       const [healthR, recordsR, statsR] = await Promise.allSettled([
         reconciliationService.healthCheck(),
         reconciliationService.getRecords(1, 5),
-        reconciliationService.getStats(),
+        reconciliationService.getStats(
+          new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10),
+          new Date().toISOString().slice(0, 10)
+        ),
       ]);
       if (healthR.status === 'fulfilled' && healthR.value?.success !== false) setHealth(healthR.value);
       if (recordsR.status === 'fulfilled' && recordsR.value?.success !== false)
         setRecords(recordsR.value.data || recordsR.value.records || []);
-      if (statsR.status === 'fulfilled' && statsR.value?.success !== false) setStats(statsR.value);
+      if (statsR.status === 'fulfilled' && statsR.value?.success !== false) setStats(statsR.value.data);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }, []);
@@ -176,7 +179,7 @@ const SchedulerManagement = () => {
           <h3>对帐统计</h3>
           <div className="scheduler-stats-grid">
             {stats.totalRecords != null && <div className="stat-card"><div className="stat-num">{stats.totalRecords}</div><div className="stat-label">总记录数</div></div>}
-            {stats.matchedCount != null && <div className="stat-card"><div className="stat-num matched">{stats.matchedCount}</div><div className="stat-label">匹配成功</div></div>}
+            {stats.successCount != null && <div className="stat-card"><div className="stat-num matched">{stats.successCount}</div><div className="stat-label">匹配成功</div></div>}
             {stats.diffCount != null && <div className="stat-card"><div className="stat-num diff">{stats.diffCount}</div><div className="stat-label">差异记录</div></div>}
           </div>
         </div>

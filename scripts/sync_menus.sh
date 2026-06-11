@@ -54,7 +54,9 @@ create "$BIZ_ID" "对帐管理" "/reconciliation" "📈" "C" 2 ""
 
 # ---- 数据服务 ----
 DATA_ID=$(create 0 "数据服务" "/data" "🗄️" "M" 3 "")
-create "$DATA_ID" "Redis" "/redis" "🗃️" "C" 1 ""
+create "$DATA_ID" "基础操作" "/redis?tab=ops" "🔧" "C" 1 ""
+create "$DATA_ID" "缓存管理" "/redis?tab=cache" "📊" "C" 2 ""
+create "$DATA_ID" "服务监控" "/redis?tab=monitor" "📈" "C" 3 ""
 
 # ---- 开发工具 ----
 DEV_ID=$(create 0 "开发工具" "/devtools" "🔧" "M" 4 "")

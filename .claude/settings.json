@@ -1,0 +1,8 @@
+{
+  "bash": {
+    "maxOutputLength": 20000
+  },
+  "toolOutput": {
+    "maxLength": 8000
+  }
+}
