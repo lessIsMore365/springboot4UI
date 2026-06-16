@@ -15,3 +15,4 @@ export { default as dictService } from './dictService';
 export { default as aiService } from './aiService';
 export { default as menuService } from './menuService';
 export { default as deptService } from './deptService';
+export { default as docsService } from './docsService';

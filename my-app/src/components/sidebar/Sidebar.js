@@ -49,6 +49,7 @@ const FALLBACK_CATEGORIES = [
 
 const FALLBACK_STANDALONE = [
   { path: '/scheduler', icon: '⏰', label: '调度任务' },
+  { path: '/docs', icon: '📚', label: 'API 文档' },
   { path: '/demo', icon: '⚡', label: '演示' },
 ];
 
@@ -59,7 +60,7 @@ const NAME_ICON = {
   data: '🗄️', redis: '🗃️',
   devtools: '🔧', java21: '☕', monitor: '📈', db: '🗄️', server: '🖥️',
   logs: '📜', operlog: '📋', online: '🟢', ai: '🤖',
-  scheduler: '⏰', demo: '⚡',
+  scheduler: '⏰', docs: '📚', demo: '⚡',
 };
 
 // 根据路由路径匹配图标（优先）
@@ -69,7 +70,7 @@ const PATH_ICON = [
   [/\/reconciliation\b/, '📈'], [/\/redis\b/, '🗃️'], [/\/java21\b/, '☕'],
   [/\/jvm\b/, '📈'], [/\/db-monitor\b/, '🗄️'], [/\/server-monitor\b/, '🖥️'],
   [/\/logs\b/, '📜'], [/\/operlog\b/, '📋'], [/\/online\b/, '🟢'],
-  [/\/ai\b/, '🤖'], [/\/scheduler\b/, '⏰'], [/\/demo\b/, '⚡'],
+  [/\/ai\b/, '🤖'], [/\/scheduler\b/, '⏰'], [/\/docs\b/, '📚'], [/\/demo\b/, '⚡'],
   [/system/, '⚙️'], [/monitor/, '🔧'],
 ];
 

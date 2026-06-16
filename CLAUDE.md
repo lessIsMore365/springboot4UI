@@ -8,7 +8,7 @@ This repository contains the frontend React application for a Spring Boot 4 RBAC
 
 - **Frontend**: React application created with Create React App (`my-app/`)
 - **Backend**: Spring Boot 4.1.0-M3 with Java 21 virtual threads, PostgreSQL, Redis, MyBatis Plus, and Spring Security (separate project)
-- **Documentation**: Backend API documentation at `/Users/xz/develop_code/java_code/springboot4Demo/docs/api.md`
+- **Documentation**: Backend API documentation is available through the MCP RAG knowledge base (`springboot4-rag`). Use the `search_rag_knowledge` MCP tool to query API docs instead of reading from local files.
 
 ## Common Development Tasks
 
@@ -81,7 +81,6 @@ The backend leverages Java 21 virtual threads for improved concurrency. Configur
 - **API Testing**: Use tools like `curl` or Postman with the documented endpoints
 
 ## Important Files
-- `/Users/xz/develop_code/java_code/springboot4Demo/CLAUDE.md` – Backend API reference, setup, and troubleshooting
 - `my-app/package.json` – Frontend dependencies and scripts
 - `my-app/README.md` – Create React App instructions
 
@@ -93,4 +92,4 @@ The backend leverages Java 21 virtual threads for improved concurrency. Configur
 
 ---
 
-*Note: The backend Spring Boot code is at `/Users/xz/develop_code/java_code/springboot4Demo/`. Refer to its CLAUDE.md for API documentation.*
+*Note: The backend Spring Boot code is at `/Users/xz/develop_code/java_code/springboot4Demo/`. API documentation is available via the `springboot4-rag` MCP server (embedding vector similarity search + LLM-generated answers). Use `search_rag_knowledge` to query it.*

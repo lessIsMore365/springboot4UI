@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { reconciliationService } from '../../services';
+import Pagination from '../common/Pagination';
 import './Reconciliation.css';
 
 const ReconciliationManagement = () => {
@@ -43,6 +44,11 @@ const ReconciliationManagement = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) loadRecords(newPage);
+  };
+
+  const handleSizeChange = (newSize) => {
+    setPagination(p => ({ ...p, size: newSize }));
+    loadRecords(1);
   };
 
   const today = () => new Date().toISOString().split('T')[0];
@@ -326,16 +332,14 @@ const ReconciliationManagement = () => {
                 )}
               </tbody>
             </table>
-            {pagination.pages > 1 && (
-              <div className="pagination">
-                <button className="page-btn" onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}>上一页</button>
-                <span className="page-info">第 {pagination.page} 页，共 {pagination.pages} 页
-                  {pagination.total > 0 && ` (总计 ${pagination.total} 条)`}</span>
-                <button className="page-btn" onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.pages}>下一页</button>
-              </div>
-            )}
+            <Pagination
+              page={pagination.page}
+              size={pagination.size}
+              total={pagination.total}
+              pages={pagination.pages}
+              onPageChange={handlePageChange}
+              onSizeChange={handleSizeChange}
+            />
           </>
         )}
       </div>

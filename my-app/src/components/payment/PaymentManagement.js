@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as echarts from 'echarts';
 import { paymentService, dictService } from '../../services';
+import Pagination from '../common/Pagination';
 import './Payment.css';
 
 const INITIAL_FORM = { subject: '', body: '', amount: '', paymentMethod: 'ALIPAY', tradeType: 'PAGE', bizType: 'ORDER' };
@@ -25,7 +26,7 @@ const processStatusClass = (s) => {
 const PaymentManagement = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromParam = searchParams.get('tab');
-  const resolveTab = (p) => p === 'notify' ? 'notify' : p === 'config' ? 'config' : p === 'stats' ? 'stats' : 'orders';
+  const resolveTab = (p) => p === 'notify' ? 'notify' : p === 'config' ? 'config' : p === 'stats' ? 'stats' : p === 'chart' ? 'chart' : 'orders';
   const [activeTab, setActiveTab] = useState(() => resolveTab(tabFromParam));
 
   // URL param changes → sync activeTab
@@ -105,14 +106,15 @@ const PaymentManagement = () => {
 
   // ======================== Orders functions ========================
 
-  const loadOrders = async (page = 1) => {
+  const loadOrders = async (page = 1, size) => {
+    const pageSize = size || pagination.size;
     setLoading(true);
     setError('');
     try {
-      const result = await paymentService.getOrders(page, pagination.size);
+      const result = await paymentService.getOrders(page, pageSize);
       if (result.success) {
         setOrders(result.data || []);
-        setPagination(result.pagination || { page, size: pagination.size, total: 0, pages: 0 });
+        setPagination(result.pagination || { page, size: pageSize, total: 0, pages: 0 });
       } else {
         setError(result.message || '获取订单列表失败');
       }
@@ -135,6 +137,11 @@ const PaymentManagement = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) loadOrders(newPage);
+  };
+
+  const handleSizeChange = (newSize) => {
+    setPagination(p => ({ ...p, size: newSize }));
+    loadOrders(1, newSize);
   };
 
   const openCreateModal = () => {
@@ -273,19 +280,20 @@ const PaymentManagement = () => {
 
   // ======================== Notify logs functions ========================
 
-  const loadNotifyLogs = async (page = 1) => {
+  const loadNotifyLogs = async (page = 1, size) => {
+    const pageSize = size || notifyPagination.size;
     setNotifyLoading(true);
     setNotifyError('');
     try {
       const result = await paymentService.getNotifyLogs(
-        page, notifyPagination.size,
+        page, pageSize,
         notifyFilterMethod || undefined,
         notifyFilterOrderNo || undefined
       );
       if (result.success) {
         const data = result.data || {};
         setNotifyLogs(data.records || []);
-        setNotifyPagination({ page: data.page || 1, size: data.size || notifyPagination.size, total: data.total || 0, pages: data.pages || 0 });
+        setNotifyPagination({ page: data.page || 1, size: data.size || pageSize, total: data.total || 0, pages: data.pages || 0 });
       } else {
         setNotifyError(result.message || '获取回调日志失败');
       }
@@ -302,6 +310,11 @@ const PaymentManagement = () => {
 
   const handleNotifyPageChange = (newPage) => {
     if (newPage >= 1 && newPage <= notifyPagination.pages) loadNotifyLogs(newPage);
+  };
+
+  const handleNotifySizeChange = (newSize) => {
+    setNotifyPagination(p => ({ ...p, size: newSize }));
+    loadNotifyLogs(1, newSize);
   };
 
   const handleNotifyFilter = () => {
@@ -580,6 +593,7 @@ const PaymentManagement = () => {
         <button className={'payment-tab' + (activeTab === 'notify' ? ' active' : '')} onClick={() => { setActiveTab('notify'); setSearchParams({ tab: 'notify' }); }}>回调日志</button>
         <button className={'payment-tab' + (activeTab === 'config' ? ' active' : '')} onClick={() => { setActiveTab('config'); setSearchParams({ tab: 'config' }); fetchConfigs(); }}>支付配置</button>
         <button className={'payment-tab' + (activeTab === 'stats' ? ' active' : '')} onClick={() => { setActiveTab('stats'); setSearchParams({ tab: 'stats' }); }}>支付统计</button>
+        <button className={'payment-tab' + (activeTab === 'chart' ? ' active' : '')} onClick={() => { setActiveTab('chart'); setSearchParams({ tab: 'chart' }); }}>仪表盘</button>
       </div>
 
       {/* ======================== Orders Tab ======================== */}
@@ -674,16 +688,14 @@ const PaymentManagement = () => {
                     )}
                   </tbody>
                 </table>
-                {pagination.pages > 1 && (
-                  <div className="pagination">
-                    <button className="page-btn" onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page <= 1}>上一页</button>
-                    <span className="page-info">第 {pagination.page} 页，共 {pagination.pages} 页
-                      {pagination.total > 0 && ` (总计 ${pagination.total} 条)`}</span>
-                    <button className="page-btn" onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page >= pagination.pages}>下一页</button>
-                  </div>
-                )}
+                <Pagination
+                  page={pagination.page}
+                  size={pagination.size}
+                  total={pagination.total}
+                  pages={pagination.pages}
+                  onPageChange={handlePageChange}
+                  onSizeChange={handleSizeChange}
+                />
               </>
             )}
           </div>
@@ -819,16 +831,14 @@ const PaymentManagement = () => {
                     )}
                   </tbody>
                 </table>
-                {notifyPagination.pages > 1 && (
-                  <div className="pagination">
-                    <button className="page-btn" onClick={() => handleNotifyPageChange(notifyPagination.page - 1)}
-                      disabled={notifyPagination.page <= 1}>上一页</button>
-                    <span className="page-info">第 {notifyPagination.page} 页，共 {notifyPagination.pages} 页
-                      {notifyPagination.total > 0 && ` (总计 ${notifyPagination.total} 条)`}</span>
-                    <button className="page-btn" onClick={() => handleNotifyPageChange(notifyPagination.page + 1)}
-                      disabled={notifyPagination.page >= notifyPagination.pages}>下一页</button>
-                  </div>
-                )}
+                <Pagination
+                  page={notifyPagination.page}
+                  size={notifyPagination.size}
+                  total={notifyPagination.total}
+                  pages={notifyPagination.pages}
+                  onPageChange={handleNotifyPageChange}
+                  onSizeChange={handleNotifySizeChange}
+                />
               </>
             )}
           </div>
@@ -1176,6 +1186,25 @@ const PaymentManagement = () => {
             </>
           )}
         </>
+      )}
+
+      {activeTab === 'chart' && (
+        <div className="payment-chart-container">
+          <div className="payment-chart-info">
+            <span>后端 ECharts 仪表盘（通过 token 认证）</span>
+            <button className="btn btn-test btn-sm" onClick={() => {
+              const iframe = document.getElementById('payment-chart-iframe');
+              if (iframe) iframe.src = paymentService.getStatsChartUrl(localStorage.getItem('access_token') || '');
+            }}>刷新仪表盘</button>
+          </div>
+          <iframe
+            id="payment-chart-iframe"
+            src={paymentService.getStatsChartUrl(localStorage.getItem('access_token') || '')}
+            title="支付统计仪表盘"
+            className="payment-chart-iframe"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
       )}
 
       {/* Create Payment Modal - works regardless of active tab */}

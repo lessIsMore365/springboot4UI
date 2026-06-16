@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { reconciliationService } from '../../services';
+import Pagination from '../common/Pagination';
 import './SchedulerManagement.css';
 
-const TASKS = [
+const TASK_DEFAULTS = [
   { key: 'alipay', name: '支付宝自动对帐', cron: '0 2 * * *', description: '每天凌晨 2:00，自动拉取前一日支付宝帐单与本地订单比对', icon: '💳' },
   { key: 'wechat', name: '微信支付自动对帐', cron: '0 3 * * *', description: '每天凌晨 3:00，自动拉取前一日微信支付帐单与本地订单比对', icon: '💚' },
   { key: 'health', name: '调度器健康监控', cron: '*/30 * * * *', description: '每 30 分钟打印调度器运行状态日志', icon: '💓' },
 ];
 
 const parseCron = (cron) => {
-  // Simple parsing for display: minute hour day month dow
   const parts = cron.split(' ');
   if (parts.length !== 5) return cron;
   const [min, hour] = parts;
-  if (min === '0' && hour !== '*' && hour !== '*/') {
+  if (min === '0' && hour !== '*' && !hour.includes('/')) {
     return `每天 ${hour.padStart(2, '0')}:00`;
   }
   if (min.startsWith('*/')) {
@@ -25,11 +25,13 @@ const parseCron = (cron) => {
 const SchedulerManagement = () => {
   const [health, setHealth] = useState(null);
   const [records, setRecords] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, size: 10, total: 0, pages: 0 });
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [runResult, setRunResult] = useState(null);
   const [runLoading, setRunLoading] = useState(false);
+  const [tasks, setTasks] = useState(TASK_DEFAULTS);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -37,21 +39,41 @@ const SchedulerManagement = () => {
     try {
       const [healthR, recordsR, statsR] = await Promise.allSettled([
         reconciliationService.healthCheck(),
-        reconciliationService.getRecords(1, 5),
+        reconciliationService.getRecords(pagination.page, pagination.size),
         reconciliationService.getStats(
           new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10),
           new Date().toISOString().slice(0, 10)
         ),
       ]);
-      if (healthR.status === 'fulfilled' && healthR.value?.success !== false) setHealth(healthR.value);
-      if (recordsR.status === 'fulfilled' && recordsR.value?.success !== false)
-        setRecords(recordsR.value.data || recordsR.value.records || []);
+
+      if (healthR.status === 'fulfilled' && healthR.value?.success !== false) {
+        const h = healthR.value;
+        setHealth(h);
+        // Update tasks with schedule info from API
+        if (h.schedule || h.supportedMethods) {
+          const dynamicTasks = [];
+          const methods = h.supportedMethods || [];
+          if (methods.includes('ALIPAY')) {
+            dynamicTasks.push({ ...TASK_DEFAULTS[0], schedule: h.schedule || TASK_DEFAULTS[0].description });
+          }
+          if (methods.includes('WECHAT')) {
+            dynamicTasks.push({ ...TASK_DEFAULTS[1], schedule: h.schedule || TASK_DEFAULTS[1].description });
+          }
+          dynamicTasks.push(TASK_DEFAULTS[2]);
+          setTasks(dynamicTasks);
+        }
+      }
+      if (recordsR.status === 'fulfilled' && recordsR.value?.success !== false) {
+        const data = recordsR.value.data || recordsR.value.records || [];
+        setRecords(data);
+        setPagination(recordsR.value.pagination || { page: 1, size: 10, total: 0, pages: 0 });
+      }
       if (statsR.status === 'fulfilled' && statsR.value?.success !== false) setStats(statsR.value.data);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, []);
+  }, [pagination.page, pagination.size]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRunReconciliation = async (asyncMode = false) => {
     setRunLoading(true);
@@ -70,6 +92,16 @@ const SchedulerManagement = () => {
     }
   };
 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.pages) {
+      setPagination(p => ({ ...p, page: newPage }));
+    }
+  };
+
+  const handleSizeChange = (newSize) => {
+    setPagination(p => ({ ...p, size: newSize, page: 1 }));
+  };
+
   return (
     <div className="scheduler-container">
       <div className="scheduler-header">
@@ -86,13 +118,15 @@ const SchedulerManagement = () => {
         <div className={`scheduler-health ${health.status === 'UP' ? 'up' : 'down'}`}>
           <span className="health-dot"></span>
           <span>调度器状态: {health.status === 'UP' ? '运行中' : health.status}</span>
-          <span style={{ marginLeft: 16, fontSize: 12, opacity: 0.7 }}>{health.message || ''}</span>
+          {health.service && <span style={{ marginLeft: 16, fontSize: 12, opacity: 0.7 }}>{health.service}</span>}
+          {health.schedule && <span style={{ marginLeft: 16, fontSize: 12, opacity: 0.7 }}>{health.schedule}</span>}
+          {health.message && <span style={{ marginLeft: 16, fontSize: 12, opacity: 0.7 }}>{health.message}</span>}
         </div>
       )}
 
       {/* Task cards */}
       <div className="scheduler-task-grid">
-        {TASKS.map(task => (
+        {tasks.map(task => (
           <div key={task.key} className="scheduler-task-card">
             <div className="task-card-header">
               <span className="task-card-icon">{task.icon}</span>
@@ -102,7 +136,7 @@ const SchedulerManagement = () => {
               </div>
             </div>
             <div className="task-card-body">
-              <div className="task-card-desc">{task.description}</div>
+              <div className="task-card-desc">{task.schedule || task.description}</div>
               <div className="task-card-cron">
                 <code>{task.cron}</code>
               </div>
@@ -142,32 +176,44 @@ const SchedulerManagement = () => {
       <div className="scheduler-section">
         <h3>最近对帐记录</h3>
         {records.length > 0 ? (
-          <table className="scheduler-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>对帐日期</th>
-                <th>总订单数</th>
-                <th>匹配数</th>
-                <th>差异数</th>
-                <th>状态</th>
-                <th>创建时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map(r => (
-                <tr key={r.id}>
-                  <td>{r.id}</td>
-                  <td>{r.reconDate || '-'}</td>
-                  <td>{r.totalCount ?? '-'}</td>
-                  <td>{r.matchCount ?? '-'}</td>
-                  <td><span style={{ color: (r.diffCount || 0) > 0 ? '#e53e3e' : '#38a169' }}>{r.diffCount ?? 0}</span></td>
-                  <td><span className={`scheduler-status ${r.status === 'SUCCESS' ? 'success' : 'fail'}`}>{r.status || '-'}</span></td>
-                  <td>{r.createTime ? new Date(r.createTime).toLocaleString() : '-'}</td>
+          <>
+            <table className="scheduler-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>对帐日期</th>
+                  <th>支付方式</th>
+                  <th>总订单数</th>
+                  <th>匹配数</th>
+                  <th>差异数</th>
+                  <th>状态</th>
+                  <th>创建时间</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {records.map(r => (
+                  <tr key={r.id}>
+                    <td>{r.id}</td>
+                    <td>{r.reconDate || '-'}</td>
+                    <td>{r.paymentMethod || '-'}</td>
+                    <td>{r.totalCount ?? r.localCount ?? '-'}</td>
+                    <td>{r.matchCount ?? '-'}</td>
+                    <td><span style={{ color: (r.diffCount || 0) > 0 ? '#e53e3e' : '#38a169' }}>{r.diffCount ?? 0}</span></td>
+                    <td><span className={`scheduler-status ${r.status === 'SUCCESS' ? 'success' : 'fail'}`}>{r.status || '-'}</span></td>
+                    <td>{r.createTime ? new Date(r.createTime).toLocaleString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              page={pagination.page}
+              size={pagination.size}
+              total={pagination.total}
+              pages={pagination.pages}
+              onPageChange={handlePageChange}
+              onSizeChange={handleSizeChange}
+            />
+          </>
         ) : (
           <div className="loading" style={{ padding: 24 }}>暂无对帐记录</div>
         )}
