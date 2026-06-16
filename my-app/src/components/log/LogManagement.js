@@ -30,6 +30,22 @@ const LogManagement = () => {
   const [files, setFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
 
+  // App selector state
+  const [apps, setApps] = useState([]);
+  const [selectedApp, setSelectedApp] = useState('');
+  const [appsLoading, setAppsLoading] = useState(false);
+
+  // App CRUD state
+  const [appFormName, setAppFormName] = useState('');
+  const [appFormPath, setAppFormPath] = useState('');
+  const [appFormError, setAppFormError] = useState('');
+  const [appFormLoading, setAppFormLoading] = useState(false);
+  const [editAppName, setEditAppName] = useState(null);
+  const [editAppPath, setEditAppPath] = useState('');
+  const [editAppEnabled, setEditAppEnabled] = useState(true);
+  const [editAppLoading, setEditAppLoading] = useState(false);
+  const [appMessage, setAppMessage] = useState(null);
+
   // Loggers state
   const [loggers, setLoggers] = useState({});
   const [loggersLoading, setLoggersLoading] = useState(false);
@@ -39,14 +55,122 @@ const LogManagement = () => {
   const [editResult, setEditResult] = useState(null);
 
   // Helper to copy search params
-  const searchParams = () => {
-    const p = { page: searchPage, size: 20 };
+  const searchParams = (pageOverride) => {
+    const p = { page: pageOverride || searchPage, size: 20 };
     if (searchKeyword) p.keyword = searchKeyword;
     if (searchLevel) p.level = searchLevel;
     if (searchFrom) p.from = searchFrom;
     if (searchTo) p.to = searchTo;
     if (searchFile) p.file = searchFile;
+    if (selectedApp) p.app = selectedApp;
     return p;
+  };
+
+  // ---- Apps ----
+  useEffect(() => {
+    const loadApps = async () => {
+      setAppsLoading(true);
+      try {
+        const result = await logService.getApps();
+        if (result.success) setApps(result.data || []);
+      } catch (err) { /* ignore */ }
+      finally { setAppsLoading(false); }
+    };
+    loadApps();
+  }, []);
+
+  // Auto-refresh current tab when app changes
+  useEffect(() => {
+    if (activeTab === 'tail' && tailData) handleTail();
+    else if (activeTab === 'search' && searchData) handleSearch(searchPage);
+    else if (activeTab === 'files') loadFiles();
+    else if (activeTab === 'loggers') loadLoggers();
+    else if (activeTab === 'apps') reloadApps();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedApp]);
+
+  // Auto-clear app message
+  useEffect(() => {
+    if (appMessage) {
+      const t = setTimeout(() => setAppMessage(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [appMessage]);
+
+  const selectedAppInfo = apps.find(a => a.name === selectedApp);
+  const isExternalApp = selectedAppInfo?.type === 'external';
+
+  const reloadApps = async () => {
+    setAppsLoading(true);
+    try {
+      const result = await logService.getApps();
+      if (result.success) setApps(result.data || []);
+    } catch (err) { /* ignore */ }
+    finally { setAppsLoading(false); }
+  };
+
+  const handleAddApp = async (e) => {
+    e.preventDefault();
+    if (!appFormName.trim() || !appFormPath.trim()) {
+      setAppFormError('名称和路径不能为空');
+      return;
+    }
+    setAppFormLoading(true);
+    setAppFormError('');
+    setAppMessage(null);
+    try {
+      const result = await logService.addApp(appFormName.trim(), appFormPath.trim());
+      if (result.success) {
+        setAppMessage({ type: 'success', text: result.message || '应用已添加' });
+        setAppFormName('');
+        setAppFormPath('');
+        reloadApps();
+      } else {
+        setAppFormError(result.message || '添加失败');
+      }
+    } catch (err) {
+      setAppFormError(err.message || '请求失败');
+    } finally {
+      setAppFormLoading(false);
+    }
+  };
+
+  const handleUpdateApp = async (name) => {
+    setEditAppLoading(true);
+    setAppMessage(null);
+    try {
+      const data = { path: editAppPath };
+      if (editAppEnabled !== null) data.enabled = editAppEnabled;
+      const result = await logService.updateApp(name, data);
+      if (result.success) {
+        setAppMessage({ type: 'success', text: result.message || '应用已更新' });
+        setEditAppName(null);
+        reloadApps();
+      } else {
+        setAppMessage({ type: 'error', text: result.message || '更新失败' });
+      }
+    } catch (err) {
+      setAppMessage({ type: 'error', text: err.message || '请求失败' });
+    } finally {
+      setEditAppLoading(false);
+    }
+  };
+
+  const handleDeleteApp = async (name) => {
+    if (!window.confirm(`确定要删除外部应用 '${name}' 吗？此操作不可撤销。`)) return;
+    setAppMessage(null);
+    try {
+      const result = await logService.deleteApp(name);
+      if (result.success) {
+        setAppMessage({ type: 'success', text: result.message || '应用已删除' });
+        if (selectedApp === name) setSelectedApp('');
+        reloadApps();
+      } else {
+        setAppMessage({ type: 'error', text: result.message || '删除失败' });
+      }
+    } catch (err) {
+      setAppMessage({ type: 'error', text: err.message || '请求失败' });
+    }
   };
 
   // ---- Tail ----
@@ -55,7 +179,7 @@ const LogManagement = () => {
     setTailError('');
     setTailData(null);
     try {
-      const result = await logService.tail(tailLines, tailLevel || undefined, tailFile || undefined);
+      const result = await logService.tail(tailLines, tailLevel || undefined, tailFile || undefined, selectedApp || undefined);
       setTailData(result);
     } catch (err) {
       setTailError(err.message || '请求失败');
@@ -69,7 +193,7 @@ const LogManagement = () => {
     setSearchLoading(true);
     setSearchError('');
     try {
-      const result = await logService.search(searchParams());
+      const result = await logService.search(searchParams(page));
       setSearchData(result);
       setSearchPage(page);
     } catch (err) {
@@ -89,7 +213,7 @@ const LogManagement = () => {
   const loadFiles = async () => {
     setFilesLoading(true);
     try {
-      const result = await logService.getFiles();
+      const result = await logService.getFiles(selectedApp || undefined);
       if (result.success) setFiles(result.data || []);
     } catch (err) { /* ignore */ }
     finally { setFilesLoading(false); }
@@ -101,7 +225,7 @@ const LogManagement = () => {
 
   const handleDownload = async (fileName) => {
     try {
-      const blob = await logService.download(fileName);
+      const blob = await logService.download(fileName, selectedApp || undefined);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -117,7 +241,7 @@ const LogManagement = () => {
   const loadLoggers = async () => {
     setLoggersLoading(true);
     try {
-      const result = await logService.getLoggers();
+      const result = await logService.getLoggers(selectedApp || undefined);
       if (result.success) setLoggers(result.data || {});
     } catch (err) { /* ignore */ }
     finally { setLoggersLoading(false); }
@@ -138,7 +262,7 @@ const LogManagement = () => {
     setEditLoading(true);
     setEditResult(null);
     try {
-      const result = await logService.setLevel(editLogger, editLevel);
+      const result = await logService.setLevel(editLogger, editLevel, selectedApp || undefined);
       setEditResult(result);
       if (result.success) {
         setLoggers(prev => ({ ...prev, [editLogger]: editLevel }));
@@ -163,7 +287,22 @@ const LogManagement = () => {
 
   return (
     <div className="log-container">
-      <h2>日志管理</h2>
+      <div className="log-header">
+        <h2>日志管理</h2>
+        <div className="log-app-selector">
+          <span className="toolbar-label">应用:</span>
+          <select className="toolbar-select" value={selectedApp}
+            onChange={(e) => setSelectedApp(e.target.value)} disabled={appsLoading}>
+            <option value="">(当前应用)</option>
+            {apps.filter(a => a.type === 'external').map(a => (
+              <option key={a.name} value={a.name}>{a.name}</option>
+            ))}
+          </select>
+          {selectedAppInfo?.type === 'external' && (
+            <span className="log-app-badge">外部</span>
+          )}
+        </div>
+      </div>
 
       <div className="log-tabs">
         {[
@@ -171,6 +310,7 @@ const LogManagement = () => {
           { key: 'search', label: '日志搜索' },
           { key: 'files', label: '文件管理' },
           { key: 'loggers', label: '日志级别' },
+          { key: 'apps', label: '应用管理' },
         ].map(t => (
           <button
             key={t.key}
@@ -214,7 +354,7 @@ const LogManagement = () => {
           {tailData?.data && (
             <div className="log-lines">
               <div className="log-lines-header">
-                <span>最近 {tailData.data.count} 行 ({tailData.data.file})</span>
+                <span>最近 {tailData.data.count} 行 ({tailData.data.file}){tailData.data.app ? ` — ${tailData.data.app}` : ''}</span>
               </div>
               <div className="log-lines-content">
                 {tailData.data.lines.map((line, i) => (
@@ -274,6 +414,7 @@ const LogManagement = () => {
               <div className="log-lines-header">
                 <span>找到 {searchData.total} 条记录，扫描 {searchData.scannedLines} 行
                   {searchData.truncated && <span className="log-truncated"> (已截断)</span>}
+                  {searchData.app ? ` — ${searchData.app}` : ''}
                 </span>
                 <span>第 {searchData.page}/{Math.ceil(searchData.total / searchData.size)} 页</span>
               </div>
@@ -307,6 +448,9 @@ const LogManagement = () => {
       {/* ======== Files Tab ======== */}
       {activeTab === 'files' && (
         <div className="log-section">
+          <div className="log-files-toolbar">
+            {selectedApp && <span className="log-app-info">应用: {selectedApp}</span>}
+          </div>
           {filesLoading ? (
             <div className="loading">加载中...</div>
           ) : (
@@ -326,7 +470,7 @@ const LogManagement = () => {
                       <tr key={i}>
                         <td className="log-file-name">{f.name}</td>
                         <td>{f.sizeDisplay || '-'}</td>
-                        <td>{f.lastModifiedDisplay ? new Date(f.lastModified).toLocaleString() : '-'}</td>
+                        <td>{f.lastModifiedDisplay || (f.lastModified ? new Date(f.lastModified).toLocaleString() : '-')}</td>
                         <td>
                           <button className="btn btn-test btn-sm" onClick={() => handleDownload(f.name)}>下载</button>
                         </td>
@@ -342,9 +486,159 @@ const LogManagement = () => {
         </div>
       )}
 
+      {/* ======== Apps Tab ======== */}
+      {activeTab === 'apps' && (
+        <div className="log-section">
+          {appMessage && (
+            <div className={`alert ${appMessage.type === 'success' ? 'alert-success' : 'alert-error'}`}>
+              {appMessage.text}
+              <button className="btn-close" onClick={() => setAppMessage(null)}>×</button>
+            </div>
+          )}
+
+          {/* Add app form */}
+          <div className="log-app-form-section">
+            <h3 className="log-section-title">添加外部应用</h3>
+            <form className="log-app-form" onSubmit={handleAddApp}>
+              <div className="log-app-form-fields">
+                <input
+                  type="text"
+                  className="toolbar-input"
+                  placeholder="应用名称 (如 order-service)"
+                  value={appFormName}
+                  onChange={(e) => setAppFormName(e.target.value)}
+                  disabled={appFormLoading}
+                />
+                <input
+                  type="text"
+                  className="toolbar-input"
+                  placeholder="日志目录路径 (如 /opt/order-service/logs)"
+                  value={appFormPath}
+                  onChange={(e) => setAppFormPath(e.target.value)}
+                  disabled={appFormLoading}
+                />
+                <button type="submit" className="btn btn-create" disabled={appFormLoading}>
+                  {appFormLoading ? '添加中...' : '添加'}
+                </button>
+              </div>
+              {appFormError && <div className="form-error">{appFormError}</div>}
+            </form>
+          </div>
+
+          {/* External apps list */}
+          <div className="log-app-list-section">
+            <h3 className="log-section-title">已配置应用</h3>
+            {appsLoading ? (
+              <div className="loading">加载中...</div>
+            ) : (
+              <div className="log-files-table-wrap">
+                <table className="log-files-table">
+                  <thead>
+                    <tr>
+                      <th>应用名称</th>
+                      <th>日志路径</th>
+                      <th>类型</th>
+                      <th>状态</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {apps.map((app) => (
+                      <tr key={app.name}>
+                        <td className="log-file-name">
+                          {app.name}
+                          {app.loggerManagement && <span className="log-app-badge" style={{marginLeft: 6}}>日志级别管理</span>}
+                        </td>
+                        <td style={{fontSize: 13, fontFamily: 'monospace'}}>{app.path}</td>
+                        <td>{app.type === 'current' ? '当前应用' : '外部应用'}</td>
+                        <td>
+                          {app.type === 'external' ? (
+                            <span className={`log-app-status ${app.enabled ? 'enabled' : 'disabled'}`}>
+                              {app.enabled ? '已启用' : '已禁用'}
+                            </span>
+                          ) : (
+                            <span className="log-app-status enabled">运行中</span>
+                          )}
+                        </td>
+                        <td>
+                          {app.type === 'external' && (
+                            <div className="log-app-actions">
+                              {editAppName === app.name ? (
+                                <>
+                                  <input
+                                    type="text"
+                                    className="toolbar-input toolbar-input-sm"
+                                    value={editAppPath}
+                                    onChange={(e) => setEditAppPath(e.target.value)}
+                                    style={{width: 180}}
+                                  />
+                                  <select
+                                    className="toolbar-select"
+                                    value={editAppEnabled}
+                                    onChange={(e) => setEditAppEnabled(e.target.value === 'true')}
+                                    style={{fontSize: 12}}
+                                  >
+                                    <option value="true">启用</option>
+                                    <option value="false">禁用</option>
+                                  </select>
+                                  <button
+                                    className="btn btn-create btn-sm"
+                                    onClick={() => handleUpdateApp(app.name)}
+                                    disabled={editAppLoading}
+                                  >
+                                    {editAppLoading ? '...' : '保存'}
+                                  </button>
+                                  <button
+                                    className="btn btn-cancel btn-sm"
+                                    onClick={() => setEditAppName(null)}
+                                  >
+                                    取消
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    className="btn btn-test btn-sm"
+                                    onClick={() => {
+                                      setEditAppName(app.name);
+                                      setEditAppPath(app.path);
+                                      setEditAppEnabled(app.enabled !== false);
+                                    }}
+                                  >
+                                    编辑
+                                  </button>
+                                  <button
+                                    className="btn btn-danger-outline btn-sm"
+                                    onClick={() => handleDeleteApp(app.name)}
+                                  >
+                                    删除
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {apps.length === 0 && (
+                      <tr><td colSpan="5" className="no-data">暂无应用配置</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ======== Loggers Tab ======== */}
       {activeTab === 'loggers' && (
         <div className="log-section">
+          {isExternalApp && (
+            <div className="alert alert-warning">
+              日志级别管理仅对当前应用可用，远程应用 &apos;{selectedApp}&apos; 不支持此操作
+            </div>
+          )}
           {loggersLoading ? (
             <div className="loading">加载中...</div>
           ) : (
@@ -366,7 +660,9 @@ const LogManagement = () => {
                           <td><span className={`log-level ${level.toLowerCase()}`}>{level}</span></td>
                           <td>
                             <button className="btn btn-test btn-sm"
-                              onClick={() => openEditLogger(name, level)}>修改</button>
+                              onClick={() => openEditLogger(name, level)}
+                              disabled={isExternalApp}
+                              title={isExternalApp ? '外部应用不支持日志级别管理' : ''}>修改</button>
                           </td>
                         </tr>
                       ))
