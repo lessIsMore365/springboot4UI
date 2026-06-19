@@ -14,6 +14,7 @@ const FALLBACK_CATEGORIES = [
       { path: '/dept', icon: '🏢', label: '部门管理' },
       { path: '/dict', icon: '📖', label: '字典管理' },
       { path: '/menus', icon: '📋', label: '菜单管理' },
+      { path: '/notices', icon: '📢', label: '通知公告' },
     ],
   },
   {
@@ -55,7 +56,7 @@ const FALLBACK_STANDALONE = [
 
 // 根据名称匹配图标（后备方案）
 const NAME_ICON = {
-  system: '⚙️', user: '👥', role: '👑', permission: '🔑', dept: '🏢', dict: '📖', menu: '📋',
+  system: '⚙️', user: '👥', role: '👑', permission: '🔑', dept: '🏢', dict: '📖', menu: '📋', notice: '📢',
   business: '📋', money: '💰', reconciliation: '📈',
   data: '🗄️', redis: '🗃️',
   devtools: '🔧', java21: '☕', monitor: '📈', db: '🗄️', server: '🖥️',
@@ -66,7 +67,7 @@ const NAME_ICON = {
 // 根据路由路径匹配图标（优先）
 const PATH_ICON = [
   [/\/users\b/, '👥'], [/\/roles\b/, '👑'], [/\/permissions\b/, '🔑'],
-  [/\/dept\b/, '🏢'], [/\/dict\b/, '📖'], [/\/menus\b/, '📋'], [/\/payment\b/, '💰'],
+  [/\/dept\b/, '🏢'], [/\/dict\b/, '📖'], [/\/menus\b/, '📋'], [/\/notices\b/, '📢'], [/\/payment\b/, '💰'],
   [/\/reconciliation\b/, '📈'], [/\/redis\b/, '🗃️'], [/\/java21\b/, '☕'],
   [/\/jvm\b/, '📈'], [/\/db-monitor\b/, '🗄️'], [/\/server-monitor\b/, '🖥️'],
   [/\/logs\b/, '📜'], [/\/operlog\b/, '📋'], [/\/online\b/, '🟢'],
@@ -147,7 +148,15 @@ const Sidebar = ({ isAuthenticated, currentUser, onLogout }) => {
   }, [isAuthenticated]);
 
   const menuCategories = dynamicCategories || FALLBACK_CATEGORIES;
-  const standaloneItems = dynamicStandalone || FALLBACK_STANDALONE;
+  const dynamicStandaloneItems = dynamicStandalone || FALLBACK_STANDALONE;
+  // 确保通知公告始终可见（即使后端动态菜单未包含）
+  const hasNotice = (cats, items) => {
+    if (items.some(i => i.path === '/notices')) return true;
+    return cats.some(c => c.items?.some(i => i.path === '/notices'));
+  };
+  const standaloneItems = hasNotice(menuCategories, dynamicStandaloneItems)
+    ? dynamicStandaloneItems
+    : [...dynamicStandaloneItems, { path: '/notices', icon: '📢', label: '通知公告' }];
 
   const isActive = (path) => {
     const [pathOnly, query] = path.split('?');

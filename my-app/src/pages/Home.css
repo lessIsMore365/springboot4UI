@@ -2,7 +2,11 @@
 
 /* 欢迎横幅 */
 .welcome-banner {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 28px;
+  align-items: center;
+  background: linear-gradient(135deg, #14324a 0%, #24566b 52%, #263d52 100%);
   border-radius: 12px;
   padding: 48px 40px;
   color: #f1f5f9;
@@ -11,28 +15,24 @@
   overflow: hidden;
 }
 
-.welcome-banner::after {
-  content: '';
-  position: absolute;
-  top: -60%;
-  right: -20%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
 .welcome-content {
   position: relative;
   z-index: 1;
+}
+
+.welcome-kicker {
+  display: inline-flex;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #bae6fd;
+  font-weight: 700;
 }
 
 .welcome-content h1 {
   margin: 0 0 8px;
   font-size: 28px;
   font-weight: 700;
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
 }
 
 .welcome-content p {
@@ -55,6 +55,85 @@
   font-size: 12px;
   color: #cbd5e0;
   font-weight: 500;
+}
+
+.welcome-panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+}
+
+.welcome-panel-label {
+  font-size: 12px;
+  color: #cbd5e0;
+}
+
+.welcome-panel strong {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.welcome-panel span:last-of-type {
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.welcome-panel button {
+  margin-top: 8px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.welcome-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ========== 概览 ========== */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.overview-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.overview-card strong {
+  font-size: 24px;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.overview-muted {
+  min-height: 18px;
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 /* ========== 系统状态 ========== */
@@ -80,6 +159,13 @@
   font-size: 13px;
   color: #64748b;
   font-weight: 500;
+}
+
+.status-time {
+  display: inline-block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
 }
 
 .status-grid {
@@ -144,6 +230,52 @@
   color: #dc2626;
 }
 
+/* ========== 联调建议 ========== */
+.insight-section {
+  margin-bottom: 24px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.insight-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #9a3412;
+}
+
+.insight-header span {
+  font-size: 12px;
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.insight-list {
+  display: grid;
+  gap: 10px;
+}
+
+.insight-item {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 13px;
+  color: #9a3412;
+}
+
+.insight-item strong {
+  color: #7c2d12;
+}
+
 /* ========== 项目信息 ========== */
 .info-section {
   margin-bottom: 24px;
@@ -177,10 +309,13 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  width: 100%;
+  text-align: left;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 18px 20px;
+  font: inherit;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -226,10 +361,44 @@
   color: #6366f1;
 }
 
-@media (max-width: 768px) {
-  .quick-grid {
-    grid-template-columns: 1fr;
-  }
+/* ========== 功能覆盖 ========== */
+.capability-section {
+  margin-bottom: 24px;
+}
+
+.capability-section h3 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.capability-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.capability-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+
+.capability-item span {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.capability-item strong {
+  color: #1e293b;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .info-block {
@@ -255,6 +424,18 @@
 
 /* ========== 响应式 ========== */
 @media (max-width: 1024px) {
+  .welcome-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-panel {
+    max-width: 260px;
+  }
+
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+
   .status-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -266,6 +447,21 @@
   .quick-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .capability-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .quick-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -275,6 +471,10 @@
 
   .welcome-content h1 {
     font-size: 22px;
+  }
+
+  .welcome-panel {
+    max-width: none;
   }
 
   .status-grid {

@@ -27,6 +27,7 @@ import DeptManagement from './components/dept/DeptManagement';
 import AiManagement from './components/ai/AiManagement';
 import SchedulerManagement from './components/scheduler/SchedulerManagement';
 import DocsViewer from './components/docs/DocsViewer';
+import NoticeManagement from './components/notice/NoticeManagement';
 import Sidebar from './components/sidebar/Sidebar';
 
 import './App.css';
@@ -116,6 +117,7 @@ const pageTitles = {
   '/dept': '部门管理',
   '/scheduler': '调度任务',
   '/docs': 'API 文档',
+  '/notices': '通知公告',
   '/ai': 'AI 智能助手',
   '/demo': '演示',
 };
@@ -266,6 +268,11 @@ const AppContent = () => {
       <Route path="/docs" element={
         <PrivateRoute isAuthenticated={isAuthenticated}>
           <DocsViewer />
+        </PrivateRoute>
+      } />
+      <Route path="/notices" element={
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <NoticeManagement />
         </PrivateRoute>
       } />
       <Route path="/ai" element={

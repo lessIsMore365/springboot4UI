@@ -16,3 +16,4 @@ export { default as aiService } from './aiService';
 export { default as menuService } from './menuService';
 export { default as deptService } from './deptService';
 export { default as docsService } from './docsService';
+export { default as noticeService } from './noticeService';
