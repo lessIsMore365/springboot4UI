@@ -150,22 +150,17 @@ export const isEmptyObject = (obj) => {
 };
 
 /**
- * 深度克隆对象
+ * 深度克隆对象（使用浏览器原生 structuredClone）
  * @param {any} obj - 要克隆的对象
  * @returns {any} 克隆后的对象
  */
 export const deepClone = (obj) => {
-  if (obj === null || typeof obj !== 'object') return obj;
-  if (obj instanceof Date) return new Date(obj.getTime());
-  if (obj instanceof Array) return obj.map(item => deepClone(item));
-  if (typeof obj === 'object') {
-    const cloned = {};
-    Object.keys(obj).forEach(key => {
-      cloned[key] = deepClone(obj[key]);
-    });
-    return cloned;
+  // 使用浏览器原生 structuredClone，支持 Date, Map, Set, RegExp, File, Blob 等
+  if (typeof structuredClone !== 'undefined') {
+    return structuredClone(obj);
   }
-  return obj;
+  // 降级方案（仅在不支持 structuredClone 的旧浏览器中）
+  return JSON.parse(JSON.stringify(obj));
 };
 
 /**

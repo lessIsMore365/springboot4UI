@@ -131,10 +131,10 @@ export const authService = {
   },
 
   /**
-   * 检查认证状态
+   * 检查认证状态（仅检查 Bearer token）
    */
   isAuthenticated: () => {
-    return !!localStorage.getItem('auth') || !!localStorage.getItem('access_token');
+    return !!localStorage.getItem('access_token');
   },
 };
 

@@ -13,7 +13,6 @@ const Register = ({ onRegisterSuccess }) => {
     password: '',
     email: '',
     age: '',
-    roles: 'ROLE_USER',
     remark: ''
   });
   const [loading, setLoading] = useState(false);
@@ -49,7 +48,6 @@ const Register = ({ onRegisterSuccess }) => {
           password: '',
           email: '',
           age: '',
-          roles: 'ROLE_USER',
           remark: ''
         });
 
@@ -149,20 +147,6 @@ const Register = ({ onRegisterSuccess }) => {
                 max="150"
                 disabled={loading}
               />
-            </div>
-
-            <div className="input-group no-icon">
-              <select
-                id="roles"
-                name="roles"
-                value={formData.roles}
-                onChange={handleChange}
-                disabled={loading}
-              >
-                <option value="ROLE_USER">普通用户</option>
-                <option value="ROLE_ADMIN">管理员</option>
-                <option value="ROLE_USER,ROLE_ADMIN">普通用户+管理员</option>
-              </select>
             </div>
 
             <div className="form-group-full">

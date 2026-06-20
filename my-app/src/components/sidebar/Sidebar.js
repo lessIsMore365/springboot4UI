@@ -159,8 +159,11 @@ const Sidebar = ({ isAuthenticated, currentUser, onLogout }) => {
     : [...dynamicStandaloneItems, { path: '/notices', icon: '📢', label: '通知公告' }];
 
   const isActive = (path) => {
+    // HashRouter 下使用 location.hash 判断当前路径
+    const hash = location.hash || '#/';
+    const hashPath = hash.replace(/^#/, '') || '/';
     const [pathOnly, query] = path.split('?');
-    if (location.pathname !== pathOnly) return false;
+    if (hashPath !== pathOnly) return false;
     if (query) return location.search === `?${query}`;
     return !location.search || location.search === '';
   };

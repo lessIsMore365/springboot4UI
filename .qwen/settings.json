@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Agent(Explore)",
+      "Bash(npm install *)",
+      "Read(//Users/xz/develop_code/java_code/springboot4Demo/docs/api/**)",
+      "Bash(curl *)",
+      "Bash(npm start)",
+      "Bash(lsof *)",
+      "Bash(xargs *)"
+    ]
+  },
+  "$version": 4
+}

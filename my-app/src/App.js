@@ -1,36 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { authService } from './services';
-
-// 导入页面组件
-import Home from './pages/Home';
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import UserList from './components/users/UserList';
-import RoleList from './components/roles/RoleList';
-import PermissionList from './components/permissions/PermissionList';
-import RedisOperations from './components/redis/RedisOperations';
-import Demo from './components/demo/Demo';
-import PaymentManagement from './components/payment/PaymentManagement';
-import ReconciliationManagement from './components/reconciliation/ReconciliationManagement';
-import Java21Demo from './components/java21/Java21Demo';
-import JvmMonitor from './components/jvm/JvmMonitor';
-
-import DbMonitor from './components/db/DbMonitor';
-import ServerMonitor from './components/server/ServerMonitor';
-import LogManagement from './components/log/LogManagement';
-import OperlogManagement from './components/operlog/OperlogManagement';
-import OnlineUserManagement from './components/online/OnlineUserManagement';
-import DictManagement from './components/dict/DictManagement';
-import MenuManagement from './components/menu/MenuManagement';
-import DeptManagement from './components/dept/DeptManagement';
-import AiManagement from './components/ai/AiManagement';
-import SchedulerManagement from './components/scheduler/SchedulerManagement';
-import DocsViewer from './components/docs/DocsViewer';
-import NoticeManagement from './components/notice/NoticeManagement';
-import Sidebar from './components/sidebar/Sidebar';
-
 import './App.css';
+
+// 导入页面组件 - 使用 React.lazy 进行代码分割
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./components/auth/Login'));
+const Register = lazy(() => import('./components/auth/Register'));
+const UserList = lazy(() => import('./components/users/UserList'));
+const RoleList = lazy(() => import('./components/roles/RoleList'));
+const PermissionList = lazy(() => import('./components/permissions/PermissionList'));
+const RedisOperations = lazy(() => import('./components/redis/RedisOperations'));
+const Demo = lazy(() => import('./components/demo/Demo'));
+const PaymentManagement = lazy(() => import('./components/payment/PaymentManagement'));
+const ReconciliationManagement = lazy(() => import('./components/reconciliation/ReconciliationManagement'));
+const Java21Demo = lazy(() => import('./components/java21/Java21Demo'));
+const JvmMonitor = lazy(() => import('./components/jvm/JvmMonitor'));
+const DbMonitor = lazy(() => import('./components/db/DbMonitor'));
+const ServerMonitor = lazy(() => import('./components/server/ServerMonitor'));
+const LogManagement = lazy(() => import('./components/log/LogManagement'));
+const OperlogManagement = lazy(() => import('./components/operlog/OperlogManagement'));
+const OnlineUserManagement = lazy(() => import('./components/online/OnlineUserManagement'));
+const DictManagement = lazy(() => import('./components/dict/DictManagement'));
+const MenuManagement = lazy(() => import('./components/menu/MenuManagement'));
+const DeptManagement = lazy(() => import('./components/dept/DeptManagement'));
+const AiManagement = lazy(() => import('./components/ai/AiManagement'));
+const SchedulerManagement = lazy(() => import('./components/scheduler/SchedulerManagement'));
+const DocsViewer = lazy(() => import('./components/docs/DocsViewer'));
+const NoticeManagement = lazy(() => import('./components/notice/NoticeManagement'));
+const Sidebar = lazy(() => import('./components/sidebar/Sidebar'));
+const EventManagement = lazy(() => import('./pages/EventManagement'));
+const LoginLogManagement = lazy(() => import('./pages/LoginLogManagement'));
+const ConfigManagement = lazy(() => import('./pages/ConfigManagement'));
+
+// 加载占位符组件
+const LoadingFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px', color: '#64748b' }}>
+    <div>加载中...</div>
+  </div>
+);
 
 /**
  * 错误边界组件
@@ -174,125 +182,144 @@ const AppContent = () => {
   }
 
   const routes = (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/demo" element={<Demo />} />
-      <Route path="/users" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <UserList />
-        </PrivateRoute>
-      } />
-      <Route path="/roles" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <RoleList />
-        </PrivateRoute>
-      } />
-      <Route path="/permissions" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <PermissionList />
-        </PrivateRoute>
-      } />
-      <Route path="/redis" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <RedisOperations />
-        </PrivateRoute>
-      } />
-      <Route path="/payment" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <PaymentManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/payment-stats" element={<Navigate to="/payment?tab=stats" />} />
-      <Route path="/reconciliation" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <ReconciliationManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/java21" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <Java21Demo />
-        </PrivateRoute>
-      } />
-      <Route path="/jvm" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <JvmMonitor />
-        </PrivateRoute>
-      } />
-      <Route path="/jvm-processes" element={<Navigate to="/jvm?tab=processes" />} />
-      <Route path="/jvm-processes-chart" element={<Navigate to="/jvm?tab=chart" />} />
-      <Route path="/db-monitor" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <DbMonitor />
-        </PrivateRoute>
-      } />
-      <Route path="/server-monitor" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <ServerMonitor />
-        </PrivateRoute>
-      } />
-      <Route path="/logs" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <LogManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/operlog" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <OperlogManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/online" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <OnlineUserManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/dict" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <DictManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/menus" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <MenuManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/dept" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <DeptManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/scheduler" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <SchedulerManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/docs" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <DocsViewer />
-        </PrivateRoute>
-      } />
-      <Route path="/notices" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <NoticeManagement />
-        </PrivateRoute>
-      } />
-      <Route path="/ai" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <AiManagement />
-        </PrivateRoute>
-      } />
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/demo" element={<Demo />} />
+        <Route path="/users" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <UserList />
+          </PrivateRoute>
+        } />
+        <Route path="/roles" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <RoleList />
+          </PrivateRoute>
+        } />
+        <Route path="/permissions" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <PermissionList />
+          </PrivateRoute>
+        } />
+        <Route path="/redis" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <RedisOperations />
+          </PrivateRoute>
+        } />
+        <Route path="/payment" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <PaymentManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/payment-stats" element={<Navigate to="/payment?tab=stats" />} />
+        <Route path="/reconciliation" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <ReconciliationManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/java21" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <Java21Demo />
+          </PrivateRoute>
+        } />
+        <Route path="/jvm" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <JvmMonitor />
+          </PrivateRoute>
+        } />
+        <Route path="/jvm-processes" element={<Navigate to="/jvm?tab=processes" />} />
+        <Route path="/jvm-processes-chart" element={<Navigate to="/jvm?tab=chart" />} />
+        <Route path="/db-monitor" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <DbMonitor />
+          </PrivateRoute>
+        } />
+        <Route path="/server-monitor" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <ServerMonitor />
+          </PrivateRoute>
+        } />
+        <Route path="/logs" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <LogManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/operlog" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <OperlogManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/online" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <OnlineUserManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/dict" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <DictManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/menus" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <MenuManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/dept" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <DeptManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/scheduler" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <SchedulerManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/docs" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <DocsViewer />
+          </PrivateRoute>
+        } />
+        <Route path="/notices" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <NoticeManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/ai" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <AiManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/event-management" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <EventManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/login-log" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <LoginLogManagement />
+          </PrivateRoute>
+        } />
+        <Route path="/config-management" element={
+          <PrivateRoute isAuthenticated={isAuthenticated}>
+            <ConfigManagement />
+          </PrivateRoute>
+        } />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Suspense>
   );
 
   // 认证页面：全屏布局，无侧边栏无顶栏
   if (isAuthPage) {
     return (
       <div className="auth-layout-full">
-        <Routes>
-          <Route path="/auth/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-          <Route path="/auth/register" element={<Register />} />
-          <Route path="*" element={<Navigate to="/auth/login" />} />
-        </Routes>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/auth/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+            <Route path="/auth/register" element={<Register />} />
+            <Route path="*" element={<Navigate to="/auth/login" />} />
+          </Routes>
+        </Suspense>
       </div>
     );
   }

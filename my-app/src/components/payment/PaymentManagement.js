@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as echarts from 'echarts';
+import DOMPurify from 'dompurify';
 import { paymentService, dictService } from '../../services';
 import Pagination from '../common/Pagination';
 import './Payment.css';
@@ -1269,7 +1270,7 @@ const PaymentManagement = () => {
                     <span>状态: <strong>{statusLabel(payResult.status)}</strong></span>
                   </div>
                   {payResult.payForm && (
-                    <div className="pay-form-html" dangerouslySetInnerHTML={{ __html: payResult.payForm }} />
+                    <div className="pay-form-html" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(payResult.payForm) }} />
                   )}
                   {payResult.codeUrl && (
                     <div className="pay-qrcode">
@@ -1316,7 +1317,7 @@ const PaymentManagement = () => {
                   <span>方式: <strong>{payModal.paymentMethod === 'ALIPAY' ? '支付宝' : '微信支付'}</strong></span>
                 </div>
                 {payModal.payForm && (
-                  <div className="pay-form-html" dangerouslySetInnerHTML={{ __html: payModal.payForm }} />
+                  <div className="pay-form-html" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(payModal.payForm) }} />
                 )}
                 {payModal.codeUrl && (
                   <div className="pay-qrcode" style={{ textAlign: 'center' }}>

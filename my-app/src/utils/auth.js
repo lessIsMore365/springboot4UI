@@ -3,12 +3,11 @@
  */
 
 /**
- * 检查用户是否已认证
+ * 检查用户是否已认证（检查 Bearer token）
  * @returns {boolean} 是否已认证
  */
 export const isAuthenticated = () => {
-  const auth = localStorage.getItem('auth');
-  return !!auth;
+  return !!localStorage.getItem('access_token');
 };
 
 /**

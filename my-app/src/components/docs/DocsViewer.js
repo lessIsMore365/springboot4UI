@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { docsService } from '../../services';
 import './DocsViewer.css';
 
@@ -159,7 +160,7 @@ const DocsViewer = () => {
     html = html.replace(/\n\n/g, '<br><br>');
     html = html.replace(/\n/g, '<br>');
 
-    return <div className="docs-content" dangerouslySetInnerHTML={{ __html: html }} />;
+    return <div className="docs-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />;
   };
 
   const escapeHtml = (str) => {

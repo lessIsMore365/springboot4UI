@@ -33,6 +33,12 @@ const JvmProcessChart = ({ onBack }) => {
   const pieChartRef = useRef(null);
   const uptimeChartRef = useRef(null);
 
+  // 保存 ECharts 实例，避免重复创建/销毁
+  const heapInstanceRef = useRef(null);
+  const gcInstanceRef = useRef(null);
+  const pieInstanceRef = useRef(null);
+  const uptimeInstanceRef = useRef(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -72,8 +78,15 @@ const JvmProcessChart = ({ onBack }) => {
 
   // Heap bar chart
   useEffect(() => {
-    if (!heapChartRef.current || processes.length === 0) return;
-    const chart = echarts.init(heapChartRef.current, 'dark');
+    if (!heapChartRef.current) return;
+    if (!heapInstanceRef.current) {
+      heapInstanceRef.current = echarts.init(heapChartRef.current, 'dark');
+      const h = () => heapInstanceRef.current.resize();
+      window.addEventListener('resize', h);
+      heapChartRef.current.__resizeHandler = h;
+    }
+    if (processes.length === 0) return;
+    const chart = heapInstanceRef.current;
     const pids = processes.map(p => 'PID ' + p.pid);
     chart.setOption({
       tooltip: { trigger: 'axis', valueFormatter: v => formatBytes(v) },
@@ -86,15 +99,20 @@ const JvmProcessChart = ({ onBack }) => {
         { name: '堆最大', type: 'bar', data: processes.map(p => p.heapMaxBytes || 0), itemStyle: { color: '#4299e1' } },
       ],
     });
-    const h = () => chart.resize();
-    window.addEventListener('resize', h);
-    return () => { window.removeEventListener('resize', h); chart.dispose(); };
+    return () => {};
   }, [processes]);
 
   // GC bar chart
   useEffect(() => {
-    if (!gcChartRef.current || processes.length === 0) return;
-    const chart = echarts.init(gcChartRef.current, 'dark');
+    if (!gcChartRef.current) return;
+    if (!gcInstanceRef.current) {
+      gcInstanceRef.current = echarts.init(gcChartRef.current, 'dark');
+      const h = () => gcInstanceRef.current.resize();
+      window.addEventListener('resize', h);
+      gcChartRef.current.__resizeHandler = h;
+    }
+    if (processes.length === 0) return;
+    const chart = gcInstanceRef.current;
     const pids = processes.map(p => 'PID ' + p.pid);
     chart.setOption({
       tooltip: { trigger: 'axis' },
@@ -107,15 +125,20 @@ const JvmProcessChart = ({ onBack }) => {
         { name: 'Full GC', type: 'bar', data: processes.map(p => p.gcDetail?.gcStats?.fullGcCount || 0), itemStyle: { color: '#fc8181' } },
       ],
     });
-    const h = () => chart.resize();
-    window.addEventListener('resize', h);
-    return () => { window.removeEventListener('resize', h); chart.dispose(); };
+    return () => {};
   }, [processes]);
 
   // Heap usage pie chart
   useEffect(() => {
-    if (!pieChartRef.current || processes.length === 0) return;
-    const chart = echarts.init(pieChartRef.current, 'dark');
+    if (!pieChartRef.current) return;
+    if (!pieInstanceRef.current) {
+      pieInstanceRef.current = echarts.init(pieChartRef.current, 'dark');
+      const h = () => pieInstanceRef.current.resize();
+      window.addEventListener('resize', h);
+      pieChartRef.current.__resizeHandler = h;
+    }
+    if (processes.length === 0) return;
+    const chart = pieInstanceRef.current;
     chart.setOption({
       tooltip: { trigger: 'item', formatter: p => `${p.name}: ${formatBytes(p.value)} (${p.percent}%)` },
       series: [{
@@ -128,15 +151,20 @@ const JvmProcessChart = ({ onBack }) => {
         itemStyle: { borderRadius: 4 },
       }],
     });
-    const h = () => chart.resize();
-    window.addEventListener('resize', h);
-    return () => { window.removeEventListener('resize', h); chart.dispose(); };
+    return () => {};
   }, [processes]);
 
   // Uptime bar chart
   useEffect(() => {
-    if (!uptimeChartRef.current || processes.length === 0) return;
-    const chart = echarts.init(uptimeChartRef.current, 'dark');
+    if (!uptimeChartRef.current) return;
+    if (!uptimeInstanceRef.current) {
+      uptimeInstanceRef.current = echarts.init(uptimeChartRef.current, 'dark');
+      const h = () => uptimeInstanceRef.current.resize();
+      window.addEventListener('resize', h);
+      uptimeChartRef.current.__resizeHandler = h;
+    }
+    if (processes.length === 0) return;
+    const chart = uptimeInstanceRef.current;
     const pids = processes.map(p => 'PID ' + p.pid);
     chart.setOption({
       tooltip: { trigger: 'axis', valueFormatter: v => formatUptime(v) },
@@ -152,10 +180,23 @@ const JvmProcessChart = ({ onBack }) => {
         },
       }],
     });
-    const h = () => chart.resize();
-    window.addEventListener('resize', h);
-    return () => { window.removeEventListener('resize', h); chart.dispose(); };
+    return () => {};
   }, [processes]);
+
+  // 组件卸载时清理 ECharts 实例
+  useEffect(() => {
+    return () => {
+      [heapInstanceRef, gcInstanceRef, pieInstanceRef, uptimeInstanceRef].forEach(ref => {
+        if (ref.current) {
+          ref.current.dispose();
+          const dom = ref.current.getDom();
+          if (dom?.__resizeHandler) {
+            window.removeEventListener('resize', dom.__resizeHandler);
+          }
+        }
+      });
+    };
+  }, []);
 
   return (
     <div style={{ background: '#1a1a2e', minHeight: '100vh', color: '#e2e8f0', padding: '24px 20px' }}>
